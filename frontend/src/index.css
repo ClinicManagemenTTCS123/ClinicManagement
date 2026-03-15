@@ -1,0 +1,108 @@
+@import "tw-animate-css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Design System ===== */
+
+@layer base {
+
+    :root {
+        --background: oklch(1 0 0);
+        --foreground: oklch(0.145 0 0);
+
+        --card: oklch(1 0 0);
+        --card-foreground: oklch(0.145 0 0);
+
+        --primary: oklch(0.205 0 0);
+        --primary-foreground: oklch(0.985 0 0);
+
+        --secondary: oklch(0.97 0 0);
+        --secondary-foreground: oklch(0.205 0 0);
+
+        --muted: oklch(0.97 0 0);
+        --muted-foreground: oklch(0.556 0 0);
+
+        --accent: oklch(0.97 0 0);
+        --accent-foreground: oklch(0.205 0 0);
+
+        --destructive: oklch(0.577 0.245 27.325);
+        --destructive-foreground: oklch(1 0 0);
+
+        --border: oklch(0.922 0 0);
+        --input: oklch(0.922 0 0);
+        --ring: oklch(0.708 0 0);
+
+        --radius: 0.625rem;
+
+        --input-shadow-focus: 0 0 0 3px hsl(199 80% 62% / 0.15);
+    }
+
+    /* dark mode */
+
+    .dark {
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+
+        --secondary: oklch(0.269 0 0);
+        --secondary-foreground: oklch(0.985 0 0);
+
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+    }
+
+    /* global */
+
+    * {
+        border-color: oklch(var(--border));
+    }
+
+    body {
+        background: oklch(var(--background));
+        color: oklch(var(--foreground));
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+}
+
+/* ===== Components ===== */
+
+@layer components {
+
+    .clinic-input {
+        width: 100%;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid oklch(var(--input));
+        background: oklch(var(--background));
+        padding: 0 12px;
+        font-size: 14px;
+        color: oklch(var(--foreground));
+        transition: all 0.2s;
+    }
+
+    .clinic-input:focus {
+        outline: none;
+        border-color: oklch(var(--primary));
+        box-shadow: var(--input-shadow-focus);
+    }
+
+}
