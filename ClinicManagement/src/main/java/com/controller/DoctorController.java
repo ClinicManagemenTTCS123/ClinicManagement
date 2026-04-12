@@ -173,18 +173,20 @@ public class DoctorController {
             if (existingDoctor == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy thông tin bác sĩ");
             }
-            existingDoctor.setFullName(dto.getFullName());
-            existingDoctor.setPhone(dto.getPhone());
+            System.out.println(">>> Tên bác sĩ React gửi lên: " + dto.getFullName());
+            System.out.println(">>> SĐT React gửi lên: " + dto.getPhone());
 
-            doctorRepo.update(em, existingDoctor);
+            if(dto.getFullName() != null) existingDoctor.setFullName(dto.getFullName());
+            if(dto.getPhone() != null) existingDoctor.setPhone(dto.getPhone());
+
+            em.merge(existingDoctor);
+            em.flush();
 
             em.getTransaction().commit();
-
             return ResponseEntity.ok(DoctorMapper.toDTO(existingDoctor));
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Lỗi cập nhật: " + e.getMessage());
         } finally {
             em.close();

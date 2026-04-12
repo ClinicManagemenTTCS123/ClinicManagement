@@ -5,42 +5,56 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
-// Danh sách các chỉ định khám để hiển thị trong Modal
-const INDICATION_OPTIONS = [
-    'Khám Nội tổng quát', 'Khám Tai Mũi Họng', 'Xét nghiệm máu cơ bản',
-    'Siêu âm ổ bụng', 'Chụp X-Quang', 'Sàng lọc tim mạch'
+const XRAY_OPTIONS = [
+    'Chụp X-Quang Panorama (Toàn cảnh)',
+    'Chụp Conebeam CT 3D',
+    'Chụp phim Cephalo',
+    'Chụp phim quanh chóp'
 ];
 
+const SERVICE_OPTIONS = [
+    'Lấy cao răng & Đánh bóng',
+    'Trám răng Composite',
+    'Nhổ răng khôn (Tiểu phẫu)',
+    'Điều trị tủy',
+    'Bọc răng sứ Zirconia',
+    'Cắm ghép Implant'
+];
+
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const MyAppointmentsD = () => {
-    // ==========================================
-    // 1. STATE DỮ LIỆU & BỘ LỌC (Giữ nguyên)
-    // ==========================================
     const [appointments, setAppointments] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+
+    const todayStr = getTodayString();
+    const [startDate, setStartDate] = useState(todayStr);
+    const [endDate, setEndDate] = useState(todayStr);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // ==========================================
-    // 2. STATE CHO MENU DROPDOWN & MODAL KHÁM BỆNH
-    // ==========================================
-    const [openDropdownId, setOpenDropdownId] = useState(null); // Lưu ID của row đang mở menu "..."
+    const [openDropdownId, setOpenDropdownId] = useState(null);
     const [isExamModalOpen, setIsExamModalOpen] = useState(false);
-    const [selectedApt, setSelectedApt] = useState(null); // Lưu thông tin lịch hẹn đang được chọn để khám
+    const [selectedApt, setSelectedApt] = useState(null);
 
-    // Dữ liệu form trong Modal
     const [examData, setExamData] = useState({
         symptoms: '',
         notes: '',
-        indications: [] // Mảng chứa các chỉ định khám được tích chọn
+        toothDetails: '',
+        indications: [],
+        services: []
     });
 
-    // Đóng dropdown khi click ra ngoài (Tùy chọn nâng cao)
     const dropdownRef = useRef(null);
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -52,10 +66,6 @@ const MyAppointmentsD = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-
-    // ==========================================
-    // 3. API & LOGIC (Giữ nguyên)
-    // ==========================================
     const fetchAppointments = async () => {
         setIsLoading(true);
         try {
@@ -69,7 +79,8 @@ const MyAppointmentsD = () => {
                     search: searchTerm,
                     status: statusFilter,
                     startDate: startDate || null,
-                    endDate: endDate || null
+                    endDate: endDate || null,
+                    _t: new Date().getTime()
                 }
             });
 
@@ -95,38 +106,78 @@ const MyAppointmentsD = () => {
         if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
     };
 
-    // ==========================================
-    // 4. HÀM XỬ LÝ SỰ KIỆN MODAL
-    // ==========================================
-    const openExamModal = (apt) => {
+    const openExamModal = async (apt) => {
         setSelectedApt(apt);
-        // Tự động điền lý do khám vào ô triệu chứng
-        setExamData({ symptoms: apt.reason || '', notes: '', indications: [] });
+        setOpenDropdownId(null);
         setIsExamModalOpen(true);
-        setOpenDropdownId(null); // Đóng dropdown
+
+        setExamData({ symptoms: apt.reason || '', notes: '', toothDetails: '', indications: [], services: [] });
+
+        try {
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+            const res = await axios.get(`${apiUrl}/medical-records/by-appointment/${apt.id}`, {
+                params: { _t: new Date().getTime() } // Ngăn cache
+            });
+
+            if (res.data && res.data.id) {
+                const savedIndications = res.data.indications ? res.data.indications.split(', ') : [];
+                const savedServices = res.data.services ? res.data.services.split(', ') : [];
+
+                setExamData({
+                    symptoms: res.data.symptoms || apt.reason || '',
+                    notes: res.data.notes || '',
+                    toothDetails: res.data.toothDetails || '',
+                    indications: savedIndications,
+                    services: savedServices
+                });
+            }
+        } catch (error) {
+            console.error("Chưa có hồ sơ trước đó hoặc lỗi lấy dữ liệu", error);
+        }
+    };
+    const submitExamRecord = async () => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+
+            await axios.post(`${apiUrl}/medical-records/upsert-exam`, {
+                appointmentId: selectedApt.id,
+                symptoms: examData.symptoms,
+                toothDetails: examData.toothDetails,
+                indications: examData.indications.join(', '),
+                services: examData.services.join(', ')
+            });
+
+            alert("Đã lưu chỉ định & hồ sơ nha khoa thành công!");
+            setIsExamModalOpen(false);
+            fetchAppointments();
+        } catch (error) {
+            console.error("Lỗi khi lưu:", error);
+            alert("Có lỗi xảy ra khi lưu dữ liệu.");
+        }
     };
 
-    const handleIndicationChange = (option) => {
+    const handleIndicationChange = (option, isChecked) => {
         setExamData(prev => {
-            const isSelected = prev.indications.includes(option);
-            if (isSelected) {
-                return { ...prev, indications: prev.indications.filter(item => item !== option) };
+            const current = prev.indications || [];
+            if (isChecked) {
+                if (!current.includes(option)) return { ...prev, indications: [...current, option] };
+                return prev;
             } else {
-                return { ...prev, indications: [...prev.indications, option] };
+                return { ...prev, indications: current.filter(item => item !== option) };
             }
         });
     };
 
-    const submitExamRecord = () => {
-        console.log("Dữ liệu gửi lên Backend:", {
-            appointmentId: selectedApt.id,
-            ...examData
+    const handleServiceChange = (option, isChecked) => {
+        setExamData(prev => {
+            const current = prev.services || [];
+            if (isChecked) {
+                if (!current.includes(option)) return { ...prev, services: [...current, option] };
+                return prev;
+            } else {
+                return { ...prev, services: current.filter(item => item !== option) };
+            }
         });
-        alert("Đã lưu hồ sơ chỉ định khám thành công cho: " + selectedApt.patientName);
-        setIsExamModalOpen(false);
-
-        // Cập nhật trạng thái lịch hẹn thành Đang khám hoặc Đã khám nếu cần
-        fetchAppointments();
     };
 
     const renderStatus = (status) => {
@@ -147,7 +198,6 @@ const MyAppointmentsD = () => {
                 <p className="text-sm text-gray-500">Quản lý và tra cứu danh sách lịch hẹn khám bệnh</p>
             </div>
 
-            {/* THANH CÔNG CỤ & BỘ LỌC */}
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-center justify-between">
                 <div className="relative w-full md:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -193,7 +243,6 @@ const MyAppointmentsD = () => {
                 </div>
             </div>
 
-            {/* BẢNG LỊCH HẸN */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible">
                 <div className="overflow-x-visible min-h-[400px]">
                     <table className="w-full text-left border-collapse">
@@ -226,7 +275,6 @@ const MyAppointmentsD = () => {
                                         <td className="px-8 py-5">{renderStatus(apt.status)}</td>
                                         <td className="px-8 py-5 text-center relative">
 
-                                            {/* Nút Ba Chấm */}
                                             <button
                                                 onClick={() => setOpenDropdownId(isDropdownOpen ? null : apt.id)}
                                                 className="p-2 bg-gray-50 text-gray-500 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"
@@ -234,7 +282,6 @@ const MyAppointmentsD = () => {
                                                 <MoreVertical size={16} />
                                             </button>
 
-                                            {/* Menu Dropdown - Absolute positioning */}
                                             {isDropdownOpen && (
                                                 <div className="absolute right-12 top-10 mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200 py-1">
                                                     <button
@@ -259,7 +306,6 @@ const MyAppointmentsD = () => {
                     </table>
                 </div>
 
-                {/* PHÂN TRANG */}
                 {totalPages > 1 && (
                     <div className="px-8 py-5 bg-white border-t border-gray-50 flex items-center justify-between">
                         <div className="text-sm text-gray-400">
@@ -276,14 +322,10 @@ const MyAppointmentsD = () => {
                 )}
             </div>
 
-            {/* ==================================================== */}
-            {/* MODAL KHÁM BỆNH VÀ CHỈ ĐỊNH */}
-            {/* ==================================================== */}
             {isExamModalOpen && selectedApt && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-[24px] w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
 
-                        {/* Modal Header */}
                         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                                 <Stethoscope className="text-blue-500" /> Bắt đầu khám bệnh
@@ -293,10 +335,8 @@ const MyAppointmentsD = () => {
                             </button>
                         </div>
 
-                        {/* Modal Body (Scrollable) */}
                         <div className="p-8 overflow-y-auto flex-1 bg-slate-50/50 space-y-6">
 
-                            {/* 1. Thông tin bệnh nhân (Read-only) */}
                             <div className="bg-white p-5 rounded-2xl border border-blue-50 shadow-sm flex items-start gap-4">
                                 <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg">
                                     {selectedApt.patientName?.charAt(0) || 'U'}
@@ -313,45 +353,74 @@ const MyAppointmentsD = () => {
                                 </div>
                             </div>
 
-                            {/* 2. Triệu chứng & Ghi chú */}
-                            <div className="space-y-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Triệu chứng lâm sàng</label>
+                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Triệu chứng / Lý do khám</label>
                                     <textarea
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:bg-white transition-colors"
-                                        rows="3"
-                                        placeholder="Mô tả triệu chứng hiện tại của bệnh nhân..."
+                                        rows="2"
+                                        placeholder="VD: Đau nhức khi nhai, ê buốt khi uống lạnh..."
                                         value={examData.symptoms}
                                         onChange={(e) => setExamData({...examData, symptoms: e.target.value})}
                                     ></textarea>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Vị trí Răng (Mã răng)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                                        placeholder="VD: Răng 46, Răng 38..."
+                                        value={examData.toothDetails}
+                                        onChange={(e) => setExamData({...examData, toothDetails: e.target.value})}
+                                    />
+                                    <p className="text-[11px] text-gray-400 mt-2 italic">Ghi chú chính xác mã răng.</p>
+                                </div>
                             </div>
 
-                            {/* 3. Chỉ định Dịch vụ/Cận lâm sàng */}
                             <div className="space-y-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                                 <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2 border-b border-gray-50 pb-3">
-                                    <Activity size={18} className="text-emerald-500" /> Chỉ định cận lâm sàng / Dịch vụ
+                                    <Activity size={18} className="text-sky-500" /> Chỉ định Cận lâm sàng (Chụp phim)
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                                    {INDICATION_OPTIONS.map((option, idx) => (
-                                        <label key={idx} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${examData.indications.includes(option) ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}>
-                                            <input
-                                                type="checkbox"
-                                                className="w-4 h-4 text-emerald-500 rounded border-gray-300 focus:ring-emerald-500"
-                                                checked={examData.indications.includes(option)}
-                                                onChange={() => handleIndicationChange(option)}
-                                            />
-                                            <span className={`text-sm ${examData.indications.includes(option) ? 'font-bold text-emerald-700' : 'font-medium text-gray-700'}`}>
-                                                {option}
-                                            </span>
-                                        </label>
-                                    ))}
+                                    {XRAY_OPTIONS.map((option, idx) => {
+                                        const isChecked = (examData.indications || []).includes(option);
+                                        return (
+                                            <label key={idx} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isChecked ? 'bg-sky-50 border-sky-200' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 text-sky-500 rounded border-gray-300 focus:ring-sky-500 cursor-pointer"
+                                                    checked={isChecked}
+                                                    onChange={(e) => handleIndicationChange(option, e.target.checked)}
+                                                />
+                                                <span className={`text-sm ${isChecked ? 'font-bold text-sky-700' : 'font-medium text-gray-700'}`}>{option}</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div className="space-y-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2 border-b border-gray-50 pb-3">
+                                    <Stethoscope size={18} className="text-emerald-500" /> Chỉ định Dịch vụ Điều trị (Thủ thuật)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                                    {SERVICE_OPTIONS.map((option, idx) => {
+                                        const isChecked = (examData.services || []).includes(option);
+                                        return (
+                                            <label key={idx} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isChecked ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 text-emerald-500 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                                                    checked={isChecked}
+                                                    onChange={(e) => handleServiceChange(option, e.target.checked)}
+                                                />
+                                                <span className={`text-sm ${isChecked ? 'font-bold text-emerald-700' : 'font-medium text-gray-700'}`}>{option}</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
                         </div>
-
-                        {/* Modal Footer */}
                         <div className="px-8 py-5 border-t border-gray-100 bg-white flex justify-end gap-3">
                             <button onClick={() => setIsExamModalOpen(false)} className="px-6 py-2.5 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition-colors">
                                 Hủy bỏ

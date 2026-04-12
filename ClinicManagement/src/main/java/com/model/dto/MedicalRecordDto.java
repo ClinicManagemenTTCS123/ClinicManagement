@@ -16,6 +16,18 @@ public class MedicalRecordDto {
     private LocalDateTime createdAt;
     private String departmentName;
 
+    private String indications;
+    private String toothDetails;
+    private String services;
+
+    // Getters / Setters
+    public String getToothDetails() { return toothDetails; }
+    public void setToothDetails(String toothDetails) { this.toothDetails = toothDetails; }
+
+    public String getServices() { return services; }
+    public void setServices(String services) { this.services = services; }
+    public String getIndications() { return indications; }
+    public void setIndications(String indications) { this.indications = indications; }
     public String getDepartmentName() {
         return departmentName;
     }

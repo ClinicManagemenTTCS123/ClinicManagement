@@ -3,15 +3,11 @@ import { Camera, Save, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
 const ProfileD = () => {
-    // =============================================
-    // 1. STATE QUẢN LÝ DỮ LIỆU
-    // =============================================
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState(null);
     const fileInputRef = useRef(null);
 
-    // State lưu trữ dữ liệu form
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -19,9 +15,6 @@ const ProfileD = () => {
         departmentName: ''
     });
 
-    // =============================================
-    // 2. GỌI API LẤY THÔNG TIN
-    // =============================================
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -29,7 +22,9 @@ const ProfileD = () => {
                 if (!doctorId) return;
 
                 const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
-                const res = await axios.get(`${apiUrl}/doctors/${doctorId}`);
+                const res = await axios.get(`${apiUrl}/doctors/${doctorId}`, {
+                    params: { _t: new Date().getTime() }
+                });
 
                 setFormData({
                     fullName: res.data.fullName || '',
@@ -48,17 +43,12 @@ const ProfileD = () => {
         fetchProfile();
     }, []);
 
-    // =============================================
-    // 3. LOGIC XỬ LÝ ẢNH & LƯU FORM
-    // =============================================
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setAvatarUrl(reader.result);
-                // Lưu ý: Để lưu ảnh thực sự vào DB, bạn cần cấu hình Upload File (Cloudinary/S3)
-                // vì base64 quá lớn để lưu trực tiếp vào MySQL.
             };
             reader.readAsDataURL(file);
         }

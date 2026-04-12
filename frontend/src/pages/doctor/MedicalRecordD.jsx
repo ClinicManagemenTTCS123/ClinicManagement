@@ -6,9 +6,6 @@ import {
 import axios from 'axios';
 
 const MedicalRecordD = () => {
-    // ==========================================
-    // 1. STATE DỮ LIỆU & BỘ LỌC
-    // ==========================================
     const [records, setRecords] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -19,9 +16,6 @@ const MedicalRecordD = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // ==========================================
-    // 2. STATE MODAL XEM/SỬA HỒ SƠ
-    // ==========================================
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
@@ -33,9 +27,6 @@ const MedicalRecordD = () => {
         notes: ''
     });
 
-    // ==========================================
-    // 3. API FETCH (Lấy danh sách hồ sơ)
-    // ==========================================
     const fetchRecords = async () => {
         setIsLoading(true);
         try {
@@ -44,12 +35,12 @@ const MedicalRecordD = () => {
 
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
 
-            // Yêu cầu Backend cần có API: GET /api/doctors/{doctorId}/medical-records
             const res = await axios.get(`${apiUrl}/doctors/${doctorId}/medical-records`, {
                 params: {
                     search: searchTerm,
                     startDate: startDate || null,
-                    endDate: endDate || null
+                    endDate: endDate || null,
+                    _t: new Date().getTime()
                 }
             });
 
@@ -78,9 +69,6 @@ const MedicalRecordD = () => {
         if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
     };
 
-    // ==========================================
-    // 5. HÀM XỬ LÝ SỰ KIỆN MODAL
-    // ==========================================
     const handleViewRecord = (record) => {
         setSelectedRecord(record);
         setFormData({
@@ -108,7 +96,6 @@ const MedicalRecordD = () => {
     const handleSaveRecord = async () => {
         try {
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
-            // Yêu cầu Backend cần có API: PUT /api/medical-records/{id}
             await axios.put(`${apiUrl}/medical-records/${selectedRecord.id}`, formData);
 
             alert("Đã cập nhật hồ sơ bệnh án thành công!");

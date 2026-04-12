@@ -59,4 +59,18 @@ public class MedicalRecordRepository {
     public MedicalRecord update(EntityManager em, MedicalRecord record) {
         return em.merge(record);
     }
+
+    public MedicalRecord findByAppointmentId(EntityManager em, Integer appointmentId) {
+        try {
+            return em.createQuery("SELECT mr FROM MedicalRecord mr WHERE mr.appointment.id = :aptId", MedicalRecord.class)
+                    .setParameter("aptId", appointmentId)
+                    .getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        }
+    }
+
+    public void save(EntityManager em, MedicalRecord record) {
+        em.persist(record);
+    }
 }

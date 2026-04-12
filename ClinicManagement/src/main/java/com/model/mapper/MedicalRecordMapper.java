@@ -42,6 +42,10 @@ public class MedicalRecordMapper {
             }
         }
 
+        dto.setIndications(medicalRecord.getIndications());
+        dto.setToothDetails(medicalRecord.getToothDetails());
+        dto.setServices(medicalRecord.getServices());
+
         return dto;
     }
 
@@ -74,6 +78,9 @@ public class MedicalRecordMapper {
         entity.setDiagnosis(dto.getDiagnosis());
         entity.setPrescription(dto.getPrescription());
         entity.setNotes(dto.getNotes());
+        entity.setIndications(dto.getIndications());
+        entity.setToothDetails(dto.getToothDetails());
+        entity.setServices(dto.getServices());
 
     }
 }

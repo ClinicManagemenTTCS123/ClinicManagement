@@ -14,9 +14,7 @@ public class MedicalRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id; // PK int
-
-
+    private Integer id;
     @OneToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "appointment_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_mr_appointment"))
@@ -59,9 +57,24 @@ public class MedicalRecord {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    @Column(length = 500)
+    private String indications;
 
+    @Column(name = "tooth_details", length = 100)
+    private String toothDetails;
 
-    // getters/setters
+    @Column(length = 500)
+    private String services;
+
+    // Getters / Setters
+    public String getToothDetails() { return toothDetails; }
+    public void setToothDetails(String toothDetails) { this.toothDetails = toothDetails; }
+
+    public String getServices() { return services; }
+    public void setServices(String services) { this.services = services; }
+    public String getIndications() { return indications; }
+    public void setIndications(String indications) { this.indications = indications; }
+
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
     public Appointment getAppointment() { return appointment; }
