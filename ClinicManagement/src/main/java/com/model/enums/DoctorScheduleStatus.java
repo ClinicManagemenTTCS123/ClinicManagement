@@ -1,4 +1,4 @@
-﻿package com.model.enums;
+package com.model.enums;
 
 public enum DoctorScheduleStatus {
     AVAILABLE,

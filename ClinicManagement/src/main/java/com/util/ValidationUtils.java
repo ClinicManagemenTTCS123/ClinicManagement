@@ -1,4 +1,4 @@
-﻿package com.util;
+package com.util;
 
 import com.model.enums.DoctorStatus;
 import com.model.enums.Gender;

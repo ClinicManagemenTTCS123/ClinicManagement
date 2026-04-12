@@ -1,4 +1,4 @@
-﻿package com.model.entity;
+package com.model.entity;
 
 
 import com.model.enums.DoctorStatus;
@@ -66,7 +66,8 @@ public class Doctor {
         this.status = status;
     }
 
-    @Column
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private DoctorStatus status;
 
     @OneToMany(mappedBy = "doctor")

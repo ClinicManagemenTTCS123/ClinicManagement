@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calendar, Users, FileText, Clock, MoreVertical } from 'lucide-react';
+import axios from 'axios'; // Nhớ import axios
 
-// 1. Phải định nghĩa StatCard TRƯỚC khi sử dụng nó ở dưới
 const StatCard = ({ title, value, subValue, icon, iconBg }) => (
     <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-start transition-all hover:shadow-md">
         <div>
@@ -16,49 +16,79 @@ const StatCard = ({ title, value, subValue, icon, iconBg }) => (
 );
 
 const DoctorDashboard = () => {
-    const appointments = [
-        { id: 1, patient: 'Trần Văn Hùng', time: '09:00', type: 'Tái khám', status: 'Đã xác nhận' },
-        { id: 2, patient: 'Lê Thị Mai', time: '09:30', type: 'Khám mới', status: 'Đã xác nhận' },
-        { id: 3, patient: 'Phạm Đức Anh', time: '10:00', type: 'Tái khám', status: 'Chờ xác nhận' },
-        { id: 4, patient: 'Nguyễn Thị Bình', time: '10:30', type: 'Khám mới', status: 'Đã xác nhận' },
-        { id: 5, patient: 'Hoàng Minh Tuấn', time: '11:00', type: 'Tái khám', status: 'Chờ xác nhận' },
-    ];
+    // State lưu dữ liệu từ API
+    const [dashboardData, setDashboardData] = useState({
+        appointmentsToday: 0,
+        totalPatients: 0,
+        totalMedicalRecords: 0,
+        nextAppointmentTime: '--:--',
+        nextAppointmentPatient: 'Không có',
+        upcomingAppointments: []
+    });
+
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboard = async () => {
+            try {
+                const doctorId = localStorage.getItem("doctorId");
+                if (!doctorId) {
+                    console.error("Không tìm thấy Doctor ID, vui lòng đăng nhập lại.");
+                    return;
+                }
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+                const res = await axios.get(`${apiUrl}/doctors/${doctorId}/dashboard`);
+
+                setDashboardData(res.data);
+            } catch (error) {
+                console.error("Lỗi khi tải Dashboard:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboard();
+    }, []);
+
+    if (isLoading) {
+        return <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>;
+    }
 
     return (
         <div className="space-y-8">
             {/* Tiêu đề */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-800 mb-1">Dashboard</h1>
-                <p className="text-gray-500 text-sm">Xin chào, BS. Nguyễn Văn An. Hôm nay bạn có 8 lịch hẹn.</p>
+                <p className="text-gray-500 text-sm">Hôm nay bạn có {dashboardData.appointmentsToday} lịch hẹn.</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     title="Lịch hẹn hôm nay"
-                    value="8"
-                    subValue="+2 so với hôm qua"
+                    value={dashboardData.appointmentsToday}
+                    subValue="Đang cập nhật"
                     icon={<Calendar />}
                     iconBg="bg-blue-50"
                 />
                 <StatCard
-                    title="Bệnh nhân"
-                    value="124"
-                    subValue="+5 tuần này"
+                    title="Tổng bệnh nhân"
+                    value={dashboardData.totalPatients}
+                    subValue="Đã từng khám"
                     icon={<Users />}
                     iconBg="bg-blue-50"
                 />
                 <StatCard
                     title="Hồ sơ bệnh án"
-                    value="89"
-                    subValue="3 chờ cập nhật"
+                    value={dashboardData.totalMedicalRecords}
+                    subValue="Đã lập"
                     icon={<FileText />}
                     iconBg="bg-blue-50"
                 />
                 <StatCard
                     title="Giờ khám tiếp theo"
-                    value="10:30"
-                    subValue="Nguyễn Thị Bình"
+                    value={dashboardData.nextAppointmentTime}
+                    subValue={dashboardData.nextAppointmentPatient}
                     icon={<Clock />}
                     iconBg="bg-blue-50"
                 />
@@ -83,22 +113,32 @@ const DoctorDashboard = () => {
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                        {appointments.map((apt) => (
-                            <tr key={apt.id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer">
-                                <td className="px-8 py-5 font-semibold text-gray-700">{apt.patient}</td>
-                                <td className="px-8 py-5 text-gray-600 text-sm">{apt.time}</td>
-                                <td className="px-8 py-5 text-gray-600 text-sm">{apt.type}</td>
-                                <td className="px-8 py-5">
+                        {dashboardData.upcomingAppointments.length > 0 ? (
+                            dashboardData.upcomingAppointments.map((apt) => (
+                                <tr key={apt.id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer">
+                                    <td className="px-8 py-5 font-semibold text-gray-700">{apt.patientName}</td>
+                                    {/* Hàm format thời gian nếu cần, tạm thời lấy startTime */}
+                                    <td className="px-8 py-5 text-gray-600 text-sm">
+                                        {new Date(apt.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </td>
+                                    <td className="px-8 py-5 text-gray-600 text-sm">{apt.reason || 'Khám bệnh'}</td>
+                                    <td className="px-8 py-5">
                                         <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${
-                                            apt.status === 'Đã xác nhận'
+                                            apt.status === 'CONFIRMED'
                                                 ? 'bg-emerald-50 text-emerald-600'
                                                 : 'bg-orange-50 text-orange-600'
                                         }`}>
-                                            {apt.status}
+                                            {apt.status === 'CONFIRMED' ? 'Đã xác nhận' :
+                                                apt.status === 'PENDING' ? 'Chờ xác nhận' : apt.status}
                                         </span>
-                                </td>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="4" className="text-center py-6 text-gray-500">Không có lịch hẹn sắp tới.</td>
                             </tr>
-                        ))}
+                        )}
                         </tbody>
                     </table>
                 </div>

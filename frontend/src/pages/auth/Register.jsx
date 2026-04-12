@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import {useNavigate} from "react-router-dom";
+import axios from "axios";
 
 // 1. Tạo Schema validation với Zod bằng tiếng Việt
 const formSchema = z.object({
@@ -18,6 +20,7 @@ const formSchema = z.object({
 export default function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const navigate = useNavigate();
 
     // 2. Khởi tạo form với react-hook-form
     const {
@@ -34,22 +37,34 @@ export default function RegisterForm() {
         },
     });
 
-    // 3. Xử lý khi submit thành công
-    const onSubmit = (data) => {
-        console.log('Dữ liệu form:', data);
-        alert('Đăng ký thành công!');
+    const onSubmit = async (data) => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+
+            const response = await axios.post(`${apiUrl}/auth/register`, {
+                fullName: data.fullName.trim(),
+                email: data.email.trim(),
+                password: data.password,
+                confirmPassword: data.confirmPassword
+            });
+
+            alert(response.data.message || 'Đăng ký thành công!');
+
+            navigate('/login');
+
+        } catch (error) {
+            const errorMessage = error.response?.data || "Có lỗi xảy ra khi đăng ký!";
+            alert(errorMessage);
+        }
     };
 
     return (
-        // Background màu xanh nhạt
         <div className="min-h-screen bg-[#eaf5fa] flex items-center justify-center p-4 font-sans text-[#1f2937]">
 
-            {/* Card Form */}
             <div className="bg-white w-full max-w-[440px] rounded-[24px] p-10 shadow-sm border border-gray-50">
 
-                {/* Header Section */}
                 <div className="flex flex-col items-center text-center mb-8">
-                    {/* Logo PITI */}
+
                     <div className="flex items-center gap-3 mb-5">
 
                         <div className="relative">

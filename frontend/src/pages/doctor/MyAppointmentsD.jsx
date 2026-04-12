@@ -1,173 +1,368 @@
-import React, { useState } from 'react';
-import { Eye, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+    Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon,
+    MoreVertical, Stethoscope, X, Activity, ClipboardList
+} from 'lucide-react';
+import axios from 'axios';
+
+// Danh sách các chỉ định khám để hiển thị trong Modal
+const INDICATION_OPTIONS = [
+    'Khám Nội tổng quát', 'Khám Tai Mũi Họng', 'Xét nghiệm máu cơ bản',
+    'Siêu âm ổ bụng', 'Chụp X-Quang', 'Sàng lọc tim mạch'
+];
 
 const MyAppointmentsD = () => {
-    // 1. Dữ liệu mẫu (Giả lập 22 người để thấy rõ 3 trang)
-    const allAppointments = Array.from({ length: 22 }, (_, i) => ({
-        id: i + 1,
-        patient: i === 0 ? 'Trần Văn Hùng' : i === 1 ? 'Lê Thị Mai' : `Bệnh nhân số ${i + 1}`,
-        date: '2026-03-14',
-        time: i % 2 === 0 ? '09:00' : '10:30',
-        type: i % 3 === 0 ? 'Tái khám' : 'Khám mới',
-        status: i % 4 === 0 ? 'Đã xác nhận' : i % 4 === 1 ? 'Chờ xác nhận' : i % 4 === 2 ? 'Hoàn thành' : 'Đã hủy'
-    }));
+    // ==========================================
+    // 1. STATE DỮ LIỆU & BỘ LỌC (Giữ nguyên)
+    // ==========================================
+    const [appointments, setAppointments] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // 2. State quản lý
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("Tất cả");
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Quy định 10 người mỗi trang
+    const [statusFilter, setStatusFilter] = useState("ALL");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
-    // 3. Logic Lọc dữ liệu (Chạy trước khi phân trang)
-    const filteredData = allAppointments.filter(apt => {
-        const matchesSearch = apt.patient.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === "Tất cả" || apt.status === statusFilter;
-        return matchesSearch && matchesStatus;
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // ==========================================
+    // 2. STATE CHO MENU DROPDOWN & MODAL KHÁM BỆNH
+    // ==========================================
+    const [openDropdownId, setOpenDropdownId] = useState(null); // Lưu ID của row đang mở menu "..."
+    const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+    const [selectedApt, setSelectedApt] = useState(null); // Lưu thông tin lịch hẹn đang được chọn để khám
+
+    // Dữ liệu form trong Modal
+    const [examData, setExamData] = useState({
+        symptoms: '',
+        notes: '',
+        indications: [] // Mảng chứa các chỉ định khám được tích chọn
     });
 
-    // 4. Logic Phân trang chuẩn (Cắt danh sách 10 người)
-    const totalItems = filteredData.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    // Đóng dropdown khi click ra ngoài (Tùy chọn nâng cao)
+    const dropdownRef = useRef(null);
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setOpenDropdownId(null);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
-    // ĐÂY LÀ BIẾN QUAN TRỌNG ĐỂ HIỂN THỊ TRÊN BẢNG
-    const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
-    // Hàm chuyển trang
-    const paginate = (pageNumber) => {
-        if (pageNumber >= 1 && pageNumber <= totalPages) {
-            setCurrentPage(pageNumber);
+    // ==========================================
+    // 3. API & LOGIC (Giữ nguyên)
+    // ==========================================
+    const fetchAppointments = async () => {
+        setIsLoading(true);
+        try {
+            const doctorId = localStorage.getItem("doctorId");
+            if (!doctorId) return;
+
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+
+            const res = await axios.get(`${apiUrl}/doctors/${doctorId}/appointments`, {
+                params: {
+                    search: searchTerm,
+                    status: statusFilter,
+                    startDate: startDate || null,
+                    endDate: endDate || null
+                }
+            });
+
+            setAppointments(res.data);
+            setCurrentPage(1);
+        } catch (error) {
+            console.error("Lỗi lấy dữ liệu:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => { fetchAppointments(); }, 500);
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm, statusFilter, startDate, endDate]);
+
+    const totalItems = appointments.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    const currentItems = appointments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
+    };
+
+    // ==========================================
+    // 4. HÀM XỬ LÝ SỰ KIỆN MODAL
+    // ==========================================
+    const openExamModal = (apt) => {
+        setSelectedApt(apt);
+        // Tự động điền lý do khám vào ô triệu chứng
+        setExamData({ symptoms: apt.reason || '', notes: '', indications: [] });
+        setIsExamModalOpen(true);
+        setOpenDropdownId(null); // Đóng dropdown
+    };
+
+    const handleIndicationChange = (option) => {
+        setExamData(prev => {
+            const isSelected = prev.indications.includes(option);
+            if (isSelected) {
+                return { ...prev, indications: prev.indications.filter(item => item !== option) };
+            } else {
+                return { ...prev, indications: [...prev.indications, option] };
+            }
+        });
+    };
+
+    const submitExamRecord = () => {
+        console.log("Dữ liệu gửi lên Backend:", {
+            appointmentId: selectedApt.id,
+            ...examData
+        });
+        alert("Đã lưu hồ sơ chỉ định khám thành công cho: " + selectedApt.patientName);
+        setIsExamModalOpen(false);
+
+        // Cập nhật trạng thái lịch hẹn thành Đang khám hoặc Đã khám nếu cần
+        fetchAppointments();
+    };
+
     const renderStatus = (status) => {
-        const baseClass = "px-3 py-1 rounded-full text-[11px] font-bold";
+        const baseClass = "px-3 py-1 rounded-full text-[11px] font-bold tracking-wide";
         switch (status) {
-            case 'Đã xác nhận': return <span className={`${baseClass} bg-emerald-50 text-emerald-600`}>{status}</span>;
-            case 'Chờ xác nhận': return <span className={`${baseClass} bg-orange-50 text-orange-600`}>{status}</span>;
-            case 'Đã hủy': return <span className={`${baseClass} bg-red-50 text-red-600`}>{status}</span>;
-            case 'Hoàn thành': return <span className={`${baseClass} bg-blue-50 text-blue-600`}>{status}</span>;
+            case 'CONFIRMED': return <span className={`${baseClass} bg-emerald-50 text-emerald-600`}>Đã xác nhận</span>;
+            case 'PENDING': return <span className={`${baseClass} bg-orange-50 text-orange-600`}>Chờ xác nhận</span>;
+            case 'CANCELED': return <span className={`${baseClass} bg-red-50 text-red-600`}>Đã hủy</span>;
+            case 'COMPLETED': return <span className={`${baseClass} bg-blue-50 text-blue-600`}>Hoàn thành</span>;
             default: return <span className={`${baseClass} bg-gray-50 text-gray-600`}>{status}</span>;
         }
     };
 
     return (
-        <div className="space-y-6">
-            {/* --- BỘ LỌC & TÌM KIẾM --- */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800 mb-1">Lịch hẹn của tôi</h1>
-                    <p className="text-sm text-gray-500">Quản lý danh sách lịch hẹn khám bệnh</p>
+        <div className="space-y-6 relative">
+            <div>
+                <h1 className="text-2xl font-bold text-gray-800 mb-1">Lịch hẹn của tôi</h1>
+                <p className="text-sm text-gray-500">Quản lý và tra cứu danh sách lịch hẹn khám bệnh</p>
+            </div>
+
+            {/* THANH CÔNG CỤ & BỘ LỌC */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-center justify-between">
+                <div className="relative w-full md:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Tìm tên bệnh nhân..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                        <span className="text-xs text-gray-500 font-medium">Từ:</span>
                         <input
-                            type="text"
-                            placeholder="Tìm tên bệnh nhân..."
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-50 transition-all"
-                            value={searchTerm}
-                            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                            type="date"
+                            className="bg-transparent text-sm outline-none text-gray-700 cursor-pointer"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
                         />
                     </div>
-
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                        <span className="text-xs text-gray-500 font-medium">Đến:</span>
+                        <input
+                            type="date"
+                            className="bg-transparent text-sm outline-none text-gray-700 cursor-pointer"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                        />
+                    </div>
                     <select
-                        className="bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-medium text-gray-700 outline-none hover:bg-gray-50 cursor-pointer shadow-sm"
+                        className="bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 outline-none hover:bg-gray-50 cursor-pointer shadow-sm min-w-[160px]"
                         value={statusFilter}
-                        onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                        onChange={(e) => setStatusFilter(e.target.value)}
                     >
-                        <option value="Tất cả">Tất cả trạng thái</option>
-                        <option value="Đã xác nhận">Đã xác nhận</option>
-                        <option value="Chờ xác nhận">Chờ xác nhận</option>
-                        <option value="Hoàn thành">Hoàn thành</option>
-                        <option value="Đã hủy">Đã hủy</option>
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="CONFIRMED">Đã xác nhận</option>
+                        <option value="PENDING">Chờ xác nhận</option>
+                        <option value="COMPLETED">Hoàn thành</option>
+                        <option value="CANCELED">Đã hủy</option>
                     </select>
                 </div>
             </div>
 
-            {/* --- BẢNG DỮ LIỆU --- */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
+            {/* BẢNG LỊCH HẸN */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible">
+                <div className="overflow-x-visible min-h-[400px]">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                        <tr className="text-gray-400 text-[12px] uppercase tracking-wider border-b border-gray-50">
+                        <tr className="text-gray-400 text-[12px] uppercase tracking-wider border-b border-gray-50 bg-gray-50/50">
                             <th className="px-8 py-5 font-bold">Bệnh nhân</th>
                             <th className="px-8 py-5 font-bold">Ngày khám</th>
                             <th className="px-8 py-5 font-bold">Giờ khám</th>
-                            <th className="px-8 py-5 font-bold">Loại khám</th>
+                            <th className="px-8 py-5 font-bold">Lý do</th>
                             <th className="px-8 py-5 font-bold">Trạng thái</th>
                             <th className="px-8 py-5 font-bold text-center">Thao tác</th>
                         </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
-                        {currentItems.length > 0 ? (
-                            currentItems.map((apt) => (
-                                <tr key={apt.id} className="hover:bg-gray-50/50 transition-colors group">
-                                    <td className="px-8 py-5 font-semibold text-gray-700">{apt.patient}</td>
-                                    <td className="px-8 py-5 text-gray-600 text-sm italic">{apt.date}</td>
-                                    <td className="px-8 py-5 text-gray-600 text-sm">{apt.time}</td>
-                                    <td className="px-8 py-5 text-gray-600 text-sm">{apt.type}</td>
-                                    <td className="px-8 py-5">{renderStatus(apt.status)}</td>
-                                    <td className="px-8 py-5 text-center">
-                                        <button className="inline-flex items-center gap-2 text-gray-400 hover:text-blue-600 transition-colors text-xs font-semibold">
-                                            <Eye size={16} /> Chi tiết
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
+                        <tbody className="divide-y divide-gray-50" ref={dropdownRef}>
+                        {isLoading ? (
+                            <tr><td colSpan="6" className="px-8 py-10 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
+                        ) : currentItems.length > 0 ? (
+                            currentItems.map((apt) => {
+                                const timeString = apt.startTime ? new Date(apt.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                                const isDropdownOpen = openDropdownId === apt.id;
+
+                                return (
+                                    <tr key={apt.id} className="hover:bg-blue-50/30 transition-colors group">
+                                        <td className="px-8 py-5 font-bold text-gray-700">{apt.patientName || 'Chưa rõ'}</td>
+                                        <td className="px-8 py-5 text-gray-600 text-sm font-medium">
+                                            <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-gray-400"/> {apt.appointment_date || 'N/A'}</div>
+                                        </td>
+                                        <td className="px-8 py-5 text-gray-600 text-sm font-medium">{timeString}</td>
+                                        <td className="px-8 py-5 text-gray-600 text-sm truncate max-w-[200px]" title={apt.reason}>{apt.reason || 'Khám bệnh'}</td>
+                                        <td className="px-8 py-5">{renderStatus(apt.status)}</td>
+                                        <td className="px-8 py-5 text-center relative">
+
+                                            {/* Nút Ba Chấm */}
+                                            <button
+                                                onClick={() => setOpenDropdownId(isDropdownOpen ? null : apt.id)}
+                                                className="p-2 bg-gray-50 text-gray-500 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
+
+                                            {/* Menu Dropdown - Absolute positioning */}
+                                            {isDropdownOpen && (
+                                                <div className="absolute right-12 top-10 mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200 py-1">
+                                                    <button
+                                                        onClick={() => openExamModal(apt)}
+                                                        className="w-full text-left px-4 py-2 text-sm text-blue-600 font-semibold hover:bg-blue-50 flex items-center gap-2"
+                                                    >
+                                                        <Stethoscope size={14} /> Khám bệnh
+                                                    </button>
+                                                    <button className="w-full text-left px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-2">
+                                                        <ClipboardList size={14} /> Xem hồ sơ
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         ) : (
-                            <tr>
-                                <td colSpan="6" className="px-8 py-10 text-center text-gray-400 italic">Không tìm thấy lịch hẹn phù hợp.</td>
-                            </tr>
+                            <tr><td colSpan="6" className="px-8 py-10 text-center text-gray-400 italic">Không tìm thấy lịch hẹn nào.</td></tr>
                         )}
                         </tbody>
                     </table>
                 </div>
 
-                {/* --- PHÂN TRANG (PAGINATION) --- */}
-                <div className="px-8 py-5 bg-white border-t border-gray-50 flex items-center justify-between">
-                    <div className="text-sm text-gray-400">
-                        Hiển thị <span className="text-gray-600 font-medium">{currentItems.length}</span> trên <span className="text-gray-600 font-medium">{totalItems}</span> bệnh nhân
+                {/* PHÂN TRANG */}
+                {totalPages > 1 && (
+                    <div className="px-8 py-5 bg-white border-t border-gray-50 flex items-center justify-between">
+                        <div className="text-sm text-gray-400">
+                            Hiển thị <span className="text-gray-600 font-medium">{currentItems.length}</span> trên <span className="text-gray-600 font-medium">{totalItems}</span> lịch hẹn
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-30 transition-all"><ChevronLeft size={18} /></button>
+                            {[...Array(totalPages)].map((_, index) => (
+                                <button key={index + 1} onClick={() => paginate(index + 1)} className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${currentPage === index + 1 ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-gray-500 hover:bg-gray-100'}`}>{index + 1}</button>
+                            ))}
+                            <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-30 transition-all"><ChevronRight size={18} /></button>
+                        </div>
                     </div>
+                )}
+            </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Nút lùi */}
-                        <button
-                            onClick={() => paginate(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="p-2 text-gray-300 hover:text-gray-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
+            {/* ==================================================== */}
+            {/* MODAL KHÁM BỆNH VÀ CHỈ ĐỊNH */}
+            {/* ==================================================== */}
+            {isExamModalOpen && selectedApt && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[24px] w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
 
-                        {/* Danh sách số trang */}
-                        {[...Array(totalPages)].map((_, index) => (
-                            <button
-                                key={index + 1}
-                                onClick={() => paginate(index + 1)}
-                                className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${
-                                    currentPage === index + 1
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-                                        : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-                                }`}
-                            >
-                                {index + 1}
+                        {/* Modal Header */}
+                        <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <Stethoscope className="text-blue-500" /> Bắt đầu khám bệnh
+                            </h2>
+                            <button onClick={() => setIsExamModalOpen(false)} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
+                                <X size={20} />
                             </button>
-                        ))}
+                        </div>
 
-                        {/* Nút tiến */}
-                        <button
-                            onClick={() => paginate(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="p-2 text-gray-300 hover:text-gray-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
+                        {/* Modal Body (Scrollable) */}
+                        <div className="p-8 overflow-y-auto flex-1 bg-slate-50/50 space-y-6">
+
+                            {/* 1. Thông tin bệnh nhân (Read-only) */}
+                            <div className="bg-white p-5 rounded-2xl border border-blue-50 shadow-sm flex items-start gap-4">
+                                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg">
+                                    {selectedApt.patientName?.charAt(0) || 'U'}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-bold text-slate-800">{selectedApt.patientName}</h3>
+                                    <div className="flex gap-6 mt-1 text-sm text-slate-500">
+                                        <p><span className="font-medium text-slate-400">Mã LH:</span> #{selectedApt.id}</p>
+                                        <p><span className="font-medium text-slate-400">Ngày khám:</span> {selectedApt.appointment_date}</p>
+                                    </div>
+                                    <p className="mt-3 text-sm text-amber-600 bg-amber-50 inline-block px-3 py-1 rounded-lg font-medium border border-amber-100">
+                                        Lý do: {selectedApt.reason || 'Bệnh nhân không ghi chú lý do'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 2. Triệu chứng & Ghi chú */}
+                            <div className="space-y-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Triệu chứng lâm sàng</label>
+                                    <textarea
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                                        rows="3"
+                                        placeholder="Mô tả triệu chứng hiện tại của bệnh nhân..."
+                                        value={examData.symptoms}
+                                        onChange={(e) => setExamData({...examData, symptoms: e.target.value})}
+                                    ></textarea>
+                                </div>
+                            </div>
+
+                            {/* 3. Chỉ định Dịch vụ/Cận lâm sàng */}
+                            <div className="space-y-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2 border-b border-gray-50 pb-3">
+                                    <Activity size={18} className="text-emerald-500" /> Chỉ định cận lâm sàng / Dịch vụ
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                                    {INDICATION_OPTIONS.map((option, idx) => (
+                                        <label key={idx} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${examData.indications.includes(option) ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-transparent hover:bg-gray-100'}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 text-emerald-500 rounded border-gray-300 focus:ring-emerald-500"
+                                                checked={examData.indications.includes(option)}
+                                                onChange={() => handleIndicationChange(option)}
+                                            />
+                                            <span className={`text-sm ${examData.indications.includes(option) ? 'font-bold text-emerald-700' : 'font-medium text-gray-700'}`}>
+                                                {option}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-8 py-5 border-t border-gray-100 bg-white flex justify-end gap-3">
+                            <button onClick={() => setIsExamModalOpen(false)} className="px-6 py-2.5 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition-colors">
+                                Hủy bỏ
+                            </button>
+                            <button onClick={submitExamRecord} className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all flex items-center gap-2">
+                                <ClipboardList size={16}/> Lưu chỉ định & Hồ sơ
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

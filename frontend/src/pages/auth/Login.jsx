@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Heart, Mail, Lock, Eye, EyeOff,Plus } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-// 1. Tạo Schema validation với Zod cho form Login
 const loginSchema = z.object({
     email: z.string().min(1, 'Vui lòng nhập email').email('Email không hợp lệ'),
     password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
@@ -15,37 +15,40 @@ export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
-    // 2. Khởi tạo form với react-hook-form
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-    } = useForm({
+    const { register, handleSubmit, formState: { errors } } = useForm({
         resolver: zodResolver(loginSchema),
-        defaultValues: {
-            email: '',
-            password: '',
-        },
+        defaultValues: { email: '', password: '' },
     });
 
-    // 3. Xử lý khi submit thành công
-    const onSubmit = (data) => {
+    const onSubmit = async (data) => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
 
-        const email = data.email.trim();
+            const response = await axios.post(`${apiUrl}/auth/login`, {
+                email: data.email.trim(),
+                password: data.password
+            });
 
-        if (email === "admin@gmail.com") {
-            navigate("/admin/dashboard");
-        }
-        else if (email === "doctor@gmail.com") {
-            navigate("/doctor/dashboard");
-        }
-        else if (email === "patient@gmail.com") {
-            navigate("/patient/dashboard");
-        }
-        else {
-            alert("Sai tài khoản hoặc mật khẩu");
-        }
+            const userRole = response.data.role;
+            const doctorId = response.data.doctorId;
 
+            localStorage.setItem("userRole", userRole);
+            if (doctorId) {
+                localStorage.setItem("doctorId", doctorId);
+            }
+
+            if (userRole === "ADMIN") {
+                navigate("/admin/dashboard");
+            } else if (userRole === "DOCTOR") {
+                navigate("/doctor/dashboard");
+            } else {
+                navigate("/patient/dashboard");
+            }
+
+        } catch (error) {
+            const errorMessage = error.response?.data || "Có lỗi xảy ra khi kết nối máy chủ!";
+            alert(errorMessage);
+        }
     };
 
     return (

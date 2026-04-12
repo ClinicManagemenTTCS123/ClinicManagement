@@ -1,4 +1,4 @@
-﻿package com.model.dto;
+package com.model.dto;
 
 public class DoctorScheduleDto {
     private Integer id;

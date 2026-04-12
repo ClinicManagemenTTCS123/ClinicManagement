@@ -1,4 +1,4 @@
-﻿package com.dao.impl;
+package com.dao.impl;
 
 import com.dao.IDoctorRepository;
 import com.model.entity.Doctor;
@@ -91,6 +91,7 @@ public class DoctorRepository implements IDoctorRepository {
                 Long.class
         ).getSingleResult();
     }
+
 
     @Override public long countByStatus(EntityManager em,
                                         com.model.enums.DoctorStatus status) {

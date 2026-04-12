@@ -1,4 +1,4 @@
-﻿package com.dao;
+package com.dao;
 
 import com.model.entity.Doctor;
 import jakarta.persistence.EntityManager;
@@ -14,6 +14,6 @@ public interface IDoctorRepository {
     Doctor update(EntityManager em,Doctor doctor);
     long countAll(EntityManager em);
     long countByStatus(EntityManager em,
-                       com.oop4clinic.clinicmanagement.model.enums.DoctorStatus status);
+                       com.model.enums.DoctorStatus status);
     Doctor findByPhone(EntityManager em,String phone);
 }

@@ -12,16 +12,12 @@ const DoctorLayout = () => {
 
     return (
         <div className="flex min-h-screen bg-[#F8FAFC]">
-            {/* Sidebar cố định cho Bác sĩ */}
             <SidebarDoctor />
 
-            {/* Vùng nội dung chính bên phải */}
             <div className="flex-1 ml-64 flex flex-col">
 
-                {/* Header Section */}
                 <header className="h-16 bg-white border-b border-gray-100 px-8 flex items-center justify-between sticky top-0 z-40">
 
-                    {/* Left: Search or Title */}
                     <div className="relative w-72">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input
@@ -31,10 +27,8 @@ const DoctorLayout = () => {
                         />
                     </div>
 
-                    {/* Right: Notifications & Profile */}
                     <div className="flex items-center gap-6">
 
-                        {/* Notification Bell */}
                         <div className="relative cursor-pointer text-gray-400 hover:text-blue-500 transition-all p-2 hover:bg-gray-50 rounded-lg">
                             <Bell size={20} />
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>

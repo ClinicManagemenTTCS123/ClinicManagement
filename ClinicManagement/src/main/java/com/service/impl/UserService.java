@@ -1,4 +1,4 @@
-﻿package com.service.impl;
+package com.service.impl;
 
 import com.dao.impl.DoctorRepository;
 import com.dao.impl.UserRepository;
@@ -35,7 +35,7 @@ public class UserService implements IUserService {
             return user;
         } catch (Exception e) {
             e.printStackTrace();
-            throw e; // ném tiếp cho tầng gọi
+            throw e;
         } finally {
             em.close();
         }
@@ -54,9 +54,9 @@ public class UserService implements IUserService {
                 throw new Exception("Mật khẩu không khớp.");
             }
 
-            if (!isValidPhone(username)) {
-                throw new Exception("Số điện thoại không hợp lệ.");
-            }
+//            if (!isValidPhone(username)) {
+//                throw new Exception("Số điện thoại không hợp lệ.");
+//            }
 
             UserRepository userRepositoryImp = new UserRepository();
             User existing = userRepositoryImp.getUserbyUsername(em, username);
@@ -69,7 +69,6 @@ public class UserService implements IUserService {
             newUser.setPassword(pass);
             newUser.setActive(true);
             newUser.setRole(UserRole.PATIENT);
-            //  newUser.setRole(UserRole.DOCTOR);
 
             userRepositoryImp.save(em, newUser);
             em.getTransaction().commit();

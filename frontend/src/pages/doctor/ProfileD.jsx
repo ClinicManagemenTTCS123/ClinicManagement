@@ -1,75 +1,119 @@
-import React, { useState, useRef } from 'react';
-import { Camera, Save } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Save, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 const ProfileD = () => {
-    /* =============================================
-       1. PHẦN CODE LOGIC (Logic & State)
-       ============================================= */
-
-    // Quản lý trạng thái hiển thị ảnh đại diện
+    // =============================================
+    // 1. STATE QUẢN LÝ DỮ LIỆU
+    // =============================================
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState(null);
-
-    // Tham chiếu đến thẻ input file ẩn để kích hoạt khi bấm nút Camera
     const fileInputRef = useRef(null);
 
-    // Hàm xử lý khi người dùng chọn file ảnh từ máy tính
+    // State lưu trữ dữ liệu form
+    const [formData, setFormData] = useState({
+        fullName: '',
+        phone: '',
+        email: '',
+        departmentName: ''
+    });
+
+    // =============================================
+    // 2. GỌI API LẤY THÔNG TIN
+    // =============================================
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const doctorId = localStorage.getItem("doctorId");
+                if (!doctorId) return;
+
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+                const res = await axios.get(`${apiUrl}/doctors/${doctorId}`);
+
+                setFormData({
+                    fullName: res.data.fullName || '',
+                    phone: res.data.phone || '',
+                    email: res.data.email || '',
+                    departmentName: res.data.departmentName || 'Chưa xác định'
+                });
+            } catch (error) {
+                console.error("Lỗi lấy thông tin:", error);
+                alert("Không thể tải thông tin hồ sơ.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    // =============================================
+    // 3. LOGIC XỬ LÝ ẢNH & LƯU FORM
+    // =============================================
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-
-        // Kiểm tra nếu có file và file đó phải là định dạng hình ảnh
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
-
-            // Sau khi đọc xong file, cập nhật URL vào State để hiển thị lên giao diện
             reader.onloadend = () => {
                 setAvatarUrl(reader.result);
+                // Lưu ý: Để lưu ảnh thực sự vào DB, bạn cần cấu hình Upload File (Cloudinary/S3)
+                // vì base64 quá lớn để lưu trực tiếp vào MySQL.
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // Hàm giả lập cú click vào input file
     const triggerUpload = () => {
         fileInputRef.current?.click();
     };
 
-    // Hàm xử lý khi nhấn nút "Lưu thay đổi"
-    const handleSave = () => {
-        alert("Đã gửi yêu cầu lưu dữ liệu!");
-        // Ở đây bạn sẽ viết code gọi API (Axios/Fetch) để lưu vào Database
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const doctorId = localStorage.getItem("doctorId");
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+
+            await axios.put(`${apiUrl}/doctors/${doctorId}`, {
+                fullName: formData.fullName,
+                phone: formData.phone
+            });
+
+            alert("Cập nhật thông tin thành công!");
+        } catch (error) {
+            console.error("Lỗi khi lưu:", error);
+            alert("Có lỗi xảy ra khi lưu thông tin.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
+    if (isLoading) {
+        return <div className="p-8 text-center text-gray-500">Đang tải thông tin hồ sơ...</div>;
+    }
 
-    /* =============================================
-       2. PHẦN CODE FRONTEND (UI & Layout)
-       ============================================= */
     return (
         <div className="p-2 bg-slate-50 min-h-screen font-sans">
             <div className="max-w-3xl">
 
-                {/* Tiêu đề trang */}
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-slate-800">Hồ sơ cá nhân</h1>
-                    <p className="text-slate-500 text-sm">Chỉnh sửa thông tin cá nhân của bạn</p>
+                    <p className="text-slate-500 text-sm">Xem và chỉnh sửa thông tin liên hệ của bạn</p>
                 </div>
 
-                {/* Card nội dung chính */}
-                <div className="bg-white rounded-xl shadow-sm p-8 border border-slate-100">
-                    <h3 className="text-lg font-semibold text-slate-700 mb-6">Thông tin bác sĩ</h3>
+                <div className="bg-white rounded-[24px] shadow-sm p-8 border border-slate-100 animate-in fade-in zoom-in-95 duration-300">
+                    <h3 className="text-lg font-bold text-slate-700 mb-6 border-b border-gray-50 pb-4">Thông tin bác sĩ</h3>
 
-                    {/* Header: Avatar & Tên */}
                     <div className="flex items-center gap-6 mb-8">
                         <div className="relative">
-                            {/* Khung chứa ảnh/chữ viết tắt */}
-                            <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold overflow-hidden border-2 border-white shadow-sm">
+                            <div className="w-24 h-24 bg-blue-100 rounded-[24px] flex items-center justify-center text-blue-600 text-2xl font-bold overflow-hidden border border-blue-50 shadow-sm">
                                 {avatarUrl ? (
                                     <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
-                                    "NA"
+                                    formData.fullName.charAt(0) || "BS"
                                 )}
                             </div>
 
-                            {/* Logic: Input file này luôn bị ẩn */}
                             <input
                                 type="file"
                                 accept="image/*"
@@ -78,60 +122,69 @@ const ProfileD = () => {
                                 onChange={handleFileChange}
                             />
 
-                            {/* Nút bấm Camera (Kích hoạt logic upload) */}
                             <button
                                 onClick={triggerUpload}
-                                className="absolute bottom-0 right-0 p-2 bg-blue-500 rounded-full border-2 border-white text-white hover:bg-blue-600 transition-all shadow-md active:scale-90"
+                                className="absolute -bottom-2 -right-2 p-2 bg-blue-600 rounded-xl border-2 border-white text-white hover:bg-blue-700 transition-all shadow-md"
                             >
                                 <Camera size={14} />
                             </button>
                         </div>
 
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-800">Nguyễn Văn An</h2>
-                            <p className="text-slate-500 font-medium">Nội tổng quát</p>
+                            <h2 className="text-2xl font-bold text-slate-800">{formData.fullName}</h2>
+                            <p className="text-blue-600 font-bold text-sm bg-blue-50 inline-block px-3 py-1 rounded-lg mt-2">
+                                {formData.departmentName}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Form Fields: Các ô nhập liệu */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-600">Họ và tên</label>
+                            <label className="text-sm font-bold text-slate-600">Họ và tên</label>
                             <input
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-                                defaultValue="Nguyễn Văn An"
+                                type="text"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm font-medium"
+                                value={formData.fullName}
+                                onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-600">Số điện thoại</label>
+                            <label className="text-sm font-bold text-slate-600">Số điện thoại</label>
                             <input
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-                                defaultValue="0987654321"
+                                type="text"
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm font-medium"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-600">Email (Tài khoản)</label>
+                            <input
+                                type="email"
+                                readOnly
+                                className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-100/50 text-slate-500 transition-all text-sm font-medium cursor-not-allowed"
+                                value={formData.email}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-600">Email</label>
+                            <label className="text-sm font-bold text-slate-600">Chuyên khoa</label>
                             <input
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-                                defaultValue="an.nguyen@clinicpro.vn"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-600">Chuyên khoa</label>
-                            <input
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-                                defaultValue="Nội tổng quát"
+                                type="text"
+                                readOnly
+                                className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-100/50 text-slate-500 transition-all text-sm font-medium cursor-not-allowed"
+                                value={formData.departmentName}
                             />
                         </div>
                     </div>
 
-                    {/* Nút bấm lưu (Kích hoạt logic lưu) */}
                     <button
                         onClick={handleSave}
-                        className="mt-8 flex items-center gap-2 bg-blue-400 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm active:shadow-inner"
+                        disabled={isSaving}
+                        className="mt-8 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 w-full md:w-auto"
                     >
-                        <Save size={18} />
-                        Lưu thay đổi
+                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                        {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
                     </button>
                 </div>
             </div>

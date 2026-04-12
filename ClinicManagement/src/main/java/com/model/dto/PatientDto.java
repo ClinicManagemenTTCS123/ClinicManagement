@@ -1,8 +1,9 @@
-﻿package com.model.dto;
+package com.model.dto;
 
 import com.model.enums.Gender;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 
 public class PatientDto {
@@ -30,6 +31,13 @@ public class PatientDto {
         this.cccd = cccd;
         this.insuranceCode = insuranceCode;
     }
+
+    private Integer visitCount;
+    private List<MedicalRecordDto> history;
+    public Integer getVisitCount() { return visitCount; }
+    public void setVisitCount(Integer visitCount) { this.visitCount = visitCount; }
+    public List<MedicalRecordDto> getHistory() { return history; }
+    public void setHistory(List<MedicalRecordDto> history) { this.history = history; }
 
     // --- Getters/Setters ---
     public Integer getId() { return id; }

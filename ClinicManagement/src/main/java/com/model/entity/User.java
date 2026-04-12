@@ -1,4 +1,4 @@
-﻿package com.model.entity;
+package com.model.entity;
 
 
 import com.model.enums.UserRole;
@@ -8,7 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users",
+@Table(name = "user",
         uniqueConstraints = @UniqueConstraint(name = "uk_user_username", columnNames = "username"))
 public class User {
 

@@ -1,4 +1,4 @@
-﻿package com.model.enums;
+package com.model.enums;
 public enum AppointmentStatus {
     PENDING,     // Đã đặt nhưng chưa xác nhận
     CONFIRMED,   // Đã xác nhận
