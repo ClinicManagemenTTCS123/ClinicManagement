@@ -69,7 +69,7 @@ public class MedicalRecordController {
                 record.setAppointment(apt);
                 record.setPatient(apt.getPatient());
                 record.setDoctor(apt.getDoctor());
-                record.setToothDetails(dto.getToothDetails()); 
+                record.setToothDetails(dto.getToothDetails());
                 record.setServices(dto.getServices());
 
                 record.setSymptoms(dto.getSymptoms());
