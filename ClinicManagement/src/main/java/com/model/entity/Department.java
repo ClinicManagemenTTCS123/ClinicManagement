@@ -18,7 +18,7 @@ public class Department {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "base_fee", nullable = false)
     private Double baseFee;
 
     @Column
