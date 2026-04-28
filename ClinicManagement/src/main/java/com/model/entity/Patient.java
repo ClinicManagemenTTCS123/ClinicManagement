@@ -24,8 +24,11 @@ public class Patient {
     private Integer id; // PK int
 
 
-    @Column(nullable = true)
+    @Column(name = "full_name")
     private String fullName;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 
     // tbao
     @Enumerated(EnumType.STRING)
@@ -33,8 +36,7 @@ public class Patient {
     private Gender gender;
 
 
-    @Column(nullable = true)
-    private LocalDate dateOfBirth;
+
 
 
     @Column(nullable = false)

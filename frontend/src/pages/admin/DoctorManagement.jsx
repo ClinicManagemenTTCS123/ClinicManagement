@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, X, ChevronDown, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
-
-// Chú ý: Import đúng đường dẫn service gọi API của mày vào đây
 import { doctorService } from '../../services/doctorService';
 import api from '../../services/api'; // Nếu file api.js export default axios instance
 
 const DoctorManagement = () => {
-    // =========================================================================
-    // 1. KHAI BÁO STATE
-    // =========================================================================
+      // 1. KHAI BÁO STATE
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [doctors, setDoctors] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // State cho Form thêm mới (Khớp 100% với DoctorDto)
+    // State cho Form thêm mới (Khớp với DoctorDto)
     const initialFormState = {
         fullName: '',
             email: '',
@@ -36,15 +33,14 @@ const DoctorManagement = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // =========================================================================
+
     // 2. GỌI API LẤY DỮ LIỆU
-    // =========================================================================
 
     // Lấy danh sách Khoa
     const fetchDepartments = async () => {
         try {
             const res = await api.get('/departments');
-            // LOG NÀY ĐỂ KIỂM TRA
+
             console.log("Dữ liệu khoa từ Backend:", res.data);
 
             // Nếu Backend trả về bọc trong field 'data' thì dùng res.data.data
@@ -67,8 +63,6 @@ const DoctorManagement = () => {
             const res = await doctorService.search(params);
             setDoctors(res.data);
 
-            // DỮ LIỆU GIẢ LẬP ĐỂ MÀY THẤY BẢNG HOẠT ĐỘNG
-
         } catch (err) {
             console.error("Lỗi lấy danh sách bác sĩ:", err);
         } finally {
@@ -85,9 +79,9 @@ const DoctorManagement = () => {
         fetchDoctors();
     }, [searchTerm, filterDept]);
 
-    // =========================================================================
+
     // 3. XỬ LÝ HÀNH ĐỘNG (THÊM, XÓA) & PHÂN TRANG
-    // =========================================================================
+
 const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true); // Bật loading nếu mày đã khai báo state loading
@@ -171,9 +165,8 @@ const handleSubmit = async (e) => {
         if (page >= 1 && page <= totalPages) setCurrentPage(page);
     };
 
-    // =========================================================================
     // 4. GIAO DIỆN HIỂN THỊ
-    // =========================================================================
+
     return (
         <div className="p-2 bg-gray-50 min-h-screen font-sans text-[#475467]">
             <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
