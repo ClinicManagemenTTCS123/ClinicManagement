@@ -1,39 +1,37 @@
-// Danh sách tài khoản mock
-const MOCK_USERS = [
-    {
-        email: "admin@gmail.com",
-        password: "123",
-        role: "admin",
-        name: "Quản trị viên"
+import api from './api';
+
+export const authService = {
+    login: async (username, password) => {
+        try {
+            // ĐỔI 'email' THÀNH 'username' ĐỂ KHỚP BACKEND VÀ DATABASE
+            const response = await api.post('/auth/login', {
+                username: username, // Gửi key là username
+                password: password
+            });
+
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || 'Đăng nhập thất bại';
+        }
     },
-    {
-        email: "doctor@gmail.com",
-        password: "123",
-        role: "doctor",
-        name: "BS. Nguyễn Văn An"
+
+    register: async (userData) => {
+        try {
+            const response = await api.post('/auth/register', {
+                username: userData.username, // Đổi từ email thành username
+                password: userData.password,
+                confirmPassword: userData.confirmPassword
+            });
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || 'Đăng ký thất bại';
+        }
     },
-    {
-        email: "patient@gmail.com",
-        password: "123",
-        role: "patient",
-        name: "Bệnh nhân A"
+
+    logout: () => {
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('doctorId');
     }
-];
-
-export const loginService = (email, password) => {
-    return new Promise((resolve, reject) => {
-        // Giả lập thời gian chờ của server 500ms
-        setTimeout(() => {
-            const user = MOCK_USERS.find(u => u.email === email && u.password === password);
-
-            if (user) {
-                // Lưu thông tin vào localStorage để các trang khác sử dụng
-                localStorage.setItem("user", JSON.stringify(user));
-                localStorage.setItem("isLogin", "true");
-                resolve(user);
-            } else {
-                reject("Email hoặc mật khẩu không chính xác!");
-            }
-        }, 500);
-    });
 };
+
+export default authService;
