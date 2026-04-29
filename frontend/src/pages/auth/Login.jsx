@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-// Đã thay Mail bằng User
+
 import { User, Lock, Eye, EyeOff, Plus } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -22,7 +22,7 @@ export default function LoginForm() {
         // 2. Cập nhật defaultValues
         defaultValues: { username: '', password: '' },
     });
-    // tai khoan mac dinh
+    // tai khoan mac dinh neu k co dl
     const onSubmit = async (data) => {
         try {
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
@@ -32,7 +32,9 @@ export default function LoginForm() {
                 password: data.password
             });
 
-            const { role } = response.data; // Lấy role từ backend trả về
+            // 1. Lấy role và các ID tiềm năng từ backend trả về
+            // Backend hiện tại trả về: { message, role, doctorId, patientId }
+            const { role, doctorId, patientId } = response.data;
 
             localStorage.setItem("userRole", role);
 
@@ -40,18 +42,22 @@ export default function LoginForm() {
                 navigate("/admin/dashboard");
             }
             else if (role === "DOCTOR") {
-                // FIX CỨNG: Luôn lấy Doctor có ID = 1 trong bảng doctors
-                localStorage.setItem("doctorId", "1");
+                // 2. Ưu tiên lấy doctorId từ API, nếu null/undefined thì mới lấy "1"
+                const finalDoctorId = doctorId || "1";
+                localStorage.setItem("doctorId", finalDoctorId.toString());
                 navigate("/doctor/dashboard");
             }
             else if (role === "PATIENT") {
-                // FIX CỨNG: Luôn lấy Patient có ID = 1 (Nguyễn Văn A) trong bảng patients
-                localStorage.setItem("patientId", "1");
+                // 3. Ưu tiên lấy patientId từ API, nếu null/undefined thì mới lấy "1"
+                const finalPatientId = patientId || "1";
+                localStorage.setItem("patientId", finalPatientId.toString());
                 navigate("/patient/dashboard");
             }
 
         } catch (error) {
-            alert("Đăng nhập thất bại! Kiểm tra lại tài khoản test.");
+            // Lấy thông báo lỗi cụ thể từ Backend nếu có (ví dụ: "Sai tài khoản...")
+            const errorMsg = error.response?.data || "Đăng nhập thất bại! Kiểm tra lại tài khoản test.";
+            alert(errorMsg);
         }
     };
 
@@ -108,10 +114,10 @@ export default function LoginForm() {
                 {/* Form Section */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-                    {/* Username (Đã đổi từ Email) */}
+                    {/* Username  */}
                     <div>
                         <div className="relative">
-                            {/* 4. Thay icon Mail bằng icon User */}
+                            {/*  icon User */}
                             <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" strokeWidth={1.5} />
                             <input
                                 type="text"

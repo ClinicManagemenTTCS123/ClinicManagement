@@ -12,16 +12,14 @@ import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
     private final UserService userService = new UserService();
-    private final DoctorRepository doctorRepo = new DoctorRepository();
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            // 1. Lấy user từ DB bằng username
             User user = userService.login(request.getUsername(), request.getPassword());
 
             if (user == null) {
@@ -29,22 +27,34 @@ public class AuthController {
             }
 
             Integer doctorId = null;
-            // 2. Nếu là DOCTOR, tìm ID bác sĩ tương ứng (giả định username bên bảng Doctor cũng giống bảng User)
-            if (user.getRole() == UserRole.DOCTOR) {
-                EntityManager em = EntityManagerProvider.em();
-                try {
-                    // Bạn có thể tìm bác sĩ theo username hoặc email tùy thiết kế bảng Doctor
-                    doctorId = em.createQuery("SELECT d.id FROM Doctor d WHERE d.username = :uname", Integer.class)
-                            .setParameter("uname", user.getUsername())
-                            .getSingleResult();
-                } catch (Exception e) {
-                    System.out.println("Chưa có thông tin bác sĩ chi tiết");
-                } finally { em.close(); }
+            Integer patientId = null;
+
+            EntityManager em = EntityManagerProvider.em();
+            try {
+                if (user.getRole() == UserRole.DOCTOR) {
+                    try {
+                        doctorId = em.createQuery("SELECT d.id FROM Doctor d WHERE d.username = :uname", Integer.class)
+                                .setParameter("uname", user.getUsername())
+                                .getSingleResult();
+                    } catch (Exception e) {
+                        System.out.println("Không tìm thấy hồ sơ bác sĩ chi tiết");
+                    }
+                }
+                else if (user.getRole() == UserRole.PATIENT) {
+                    try {
+                        patientId = em.createQuery("SELECT p.id FROM Patient p WHERE p.username = :uname", Integer.class)
+                                .setParameter("uname", user.getUsername())
+                                .getSingleResult();
+                    } catch (Exception e) {
+                        System.out.println("Không tìm thấy hồ sơ bệnh nhân chi tiết");
+                    }
+                }
+            } finally {
+                em.close();
             }
 
-            // 3. Trả về thông tin role để Frontend điều hướng
-            AuthResponse response = new AuthResponse("Thành công", user.getRole().name(), doctorId);
-            return ResponseEntity.ok(response);
+            // Gọi đúng constructor 4 tham số: String, String, Integer, Integer
+            return ResponseEntity.ok(new AuthResponse("Thành công", user.getRole().name(), doctorId, patientId));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi hệ thống: " + e.getMessage());
@@ -61,12 +71,13 @@ public class AuthController {
             );
 
             if (isSuccess) {
-                return ResponseEntity.ok(new AuthResponse("Đăng ký thành công!", "PATIENT"));
+                // SỬA TẠI ĐÂY: Truyền đủ 4 tham số để khớp với file AuthResponse.java
+                return ResponseEntity.ok(new AuthResponse("Đăng ký thành công!", "PATIENT", null, null));
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Đăng ký thất bại.");
             }
 
-        } catch (Exception e) { 
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
