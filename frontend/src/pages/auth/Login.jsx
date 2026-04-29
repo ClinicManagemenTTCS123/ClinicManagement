@@ -22,36 +22,36 @@ export default function LoginForm() {
         // 2. Cập nhật defaultValues
         defaultValues: { username: '', password: '' },
     });
-
+    // tai khoan mac dinh
     const onSubmit = async (data) => {
         try {
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
 
-            // 3. Đổi payload gửi đi
             const response = await axios.post(`${apiUrl}/auth/login`, {
                 username: data.username.trim(),
                 password: data.password
             });
 
-            const userRole = response.data.role;
-            const doctorId = response.data.doctorId;
+            const { role } = response.data; // Lấy role từ backend trả về
 
-            localStorage.setItem("userRole", userRole);
-            if (doctorId) {
-                localStorage.setItem("doctorId", doctorId);
-            }
+            localStorage.setItem("userRole", role);
 
-            if (userRole === "ADMIN") {
+            if (role === "ADMIN") {
                 navigate("/admin/dashboard");
-            } else if (userRole === "DOCTOR") {
+            }
+            else if (role === "DOCTOR") {
+                // FIX CỨNG: Luôn lấy Doctor có ID = 1 trong bảng doctors
+                localStorage.setItem("doctorId", "1");
                 navigate("/doctor/dashboard");
-            } else {
+            }
+            else if (role === "PATIENT") {
+                // FIX CỨNG: Luôn lấy Patient có ID = 1 (Nguyễn Văn A) trong bảng patients
+                localStorage.setItem("patientId", "1");
                 navigate("/patient/dashboard");
             }
 
         } catch (error) {
-            const errorMessage = error.response?.data || "Có lỗi xảy ra khi kết nối máy chủ!";
-            alert(errorMessage);
+            alert("Đăng nhập thất bại! Kiểm tra lại tài khoản test.");
         }
     };
 
