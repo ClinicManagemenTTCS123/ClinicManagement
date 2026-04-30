@@ -23,8 +23,15 @@ public class InvoiceMapper {
 
         if (invoice.getAppointment() != null) {
             dto.setAppointmentId(invoice.getAppointment().getId());
+
+            if (invoice.getAppointment().getPatient() != null) {
+                dto.setPatientName(invoice.getAppointment().getPatient().getFullName());
+            }
+
             if (invoice.getAppointment().getDoctor() != null) {
                 dto.setDoctorName(invoice.getAppointment().getDoctor().getFullName());
+            } else {
+                dto.setDoctorName("Chưa xếp bác sĩ");
             }
         }
 

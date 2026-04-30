@@ -195,7 +195,7 @@ public class DoctorController {
             if(dto.getConsultationFee() != null) existingDoctor.setConsultationFee(dto.getConsultationFee());
             if(dto.getNotes() != null) existingDoctor.setNotes(dto.getNotes());
             if(dto.getDoctorStatus() != null) existingDoctor.setStatus(dto.getDoctorStatus());
-
+            if(dto.getAvatar() != null) existingDoctor.setAvatar(dto.getAvatar());
             em.merge(existingDoctor);
             em.flush();
 

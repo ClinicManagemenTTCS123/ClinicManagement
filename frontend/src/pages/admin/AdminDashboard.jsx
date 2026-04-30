@@ -1,38 +1,98 @@
-import React from 'react';
-import { Contact, Users, Building, Calendar, Receipt, ClipboardList } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { getDashboardSummary } from '../../services/admindashboardService';
+import { Users, UserPlus, Building2, CalendarDays, ReceiptText, FileText } from 'lucide-react';
 
-const Dashboard = () => {
-    const stats = [
-        { title: 'Bác sĩ', value: '24', subtext: '+2 tháng này', icon: <Contact size={24} className="text-blue-500" />, iconBg: 'bg-blue-50' },
-        { title: 'Bệnh nhân', value: '1283', subtext: '+45 tháng này', icon: <Users size={24} className="text-blue-500" />, iconBg: 'bg-blue-50' },
-        { title: 'Khoa', value: '8', subtext: '', icon: <Building size={24} className="text-blue-500" />, iconBg: 'bg-blue-50' },
-        { title: 'Lịch hẹn hôm nay', value: '18', subtext: '', icon: <Calendar size={24} className="text-blue-500" />, iconBg: 'bg-blue-50' },
-        { title: 'Hóa đơn chờ xử lý', value: '12', subtext: '', icon: <Receipt size={24} className="text-blue-500" />, iconBg: 'bg-blue-50' },
-        { title: 'Hồ sơ bệnh án', value: '3420', subtext: '', icon: <ClipboardList size={24} className="text-blue-500" />, iconBg: 'bg-blue-50' },
-    ];
+const AdminDashboard = () => {
+    const [summary, setSummary] = useState({
+        totalDoctors: 0,
+        totalPatients: 0,
+        totalDepartments: 0,
+        appointmentsToday: 0,
+        pendingInvoices: 0,
+        totalMedicalRecords: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    const loadDashboardData = async () => {
+        try {
+            const data = await getDashboardSummary();
+            setSummary(data);
+        } catch (error) {
+            console.error("Lỗi lấy dữ liệu dashboard:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadDashboardData();
+    }, []);
+
+    // Component con
+    const StatCard = ({ title, value, icon: Icon, color }) => (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition-shadow">
+            <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+                <h3 className="text-2xl font-bold text-gray-800">{value.toLocaleString()}</h3>
+            </div>
+            <div className={`p-3 rounded-lg ${color}`}>
+                <Icon size={24} className="text-blue-600" />
+            </div>
+        </div>
+    );
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     return (
-        <div>
+        <div className="p-8 bg-gray-50 min-h-screen">
+            <h1 className="text-2xl font-bold text-gray-800 mb-8">Tổng quan hệ thống</h1>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {stats.map((stat, index) => (
-                    <div key={index} className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm flex flex-col justify-between h-32">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-gray-500 text-sm font-medium mb-1">{stat.title}</p>
-                                <h3 className="text-2xl font-bold text-gray-800">{stat.value}</h3>
-                            </div>
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.iconBg}`}>
-                                {stat.icon}
-                            </div>
-                        </div>
-                        {stat.subtext && (
-                            <p className="text-emerald-500 text-xs font-medium">{stat.subtext}</p>
-                        )}
-                    </div>
-                ))}
+                <StatCard
+                    title="Bác sĩ"
+                    value={summary.totalDoctors}
+                    icon={Users}
+                    color="bg-blue-50"
+                />
+                <StatCard
+                    title="Bệnh nhân"
+                    value={summary.totalPatients}
+                    icon={UserPlus}
+                    color="bg-green-50"
+                />
+                <StatCard
+                    title="Khoa"
+                    value={summary.totalDepartments}
+                    icon={Building2}
+                    color="bg-purple-50"
+                />
+                <StatCard
+                    title="Lịch hẹn hôm nay"
+                    value={summary.appointmentsToday}
+                    icon={CalendarDays}
+                    color="bg-orange-50"
+                />
+                <StatCard
+                    title="Hóa đơn chờ xử lý"
+                    value={summary.pendingInvoices}
+                    icon={ReceiptText}
+                    color="bg-red-50"
+                />
+                <StatCard
+                    title="Hồ sơ bệnh án"
+                    value={summary.totalMedicalRecords}
+                    icon={FileText}
+                    color="bg-teal-50"
+                />
             </div>
         </div>
     );
 };
 
-export default Dashboard;
+export default AdminDashboard;

@@ -10,12 +10,9 @@ import com.model.dto.InvoiceDto;
 import com.model.dto.MedicalRecordDto;
 import com.model.dto.PatientDashboardDto;
 import com.model.dto.PatientDto;
-import com.model.entity.Appointment;
-import com.model.entity.Department;
-import com.model.entity.Doctor;
-import com.model.entity.Invoice;
-import com.model.entity.Patient;
+import com.model.entity.*;
 import com.model.enums.AppointmentStatus;
+import com.model.enums.InvoiceStatus;
 import com.model.mapper.AppointmentMapper;
 import com.model.mapper.InvoiceMapper;
 import com.model.mapper.MedicalRecordMapper;
@@ -82,14 +79,38 @@ public class PatientController {
             PatientDashboardDto dto = new PatientDashboardDto();
             dto.setPatientId(patient.getId());
             dto.setPatientName(patient.getFullName());
-            dto.setUpcomingAppointmentsCount(appointmentRepo.countUpcomingByPatientId(em, id, now));
-            dto.setUnpaidInvoicesCount(invoiceRepo.countUnpaidByPatientId(em, id));
-            dto.setUnpaidInvoicesTotal(invoiceRepo.sumUnpaidByPatientId(em, id));
-            dto.setTotalMedicalRecords(medicalRecordRepo.findByPatientId(em, id).size());
-            dto.setUpcomingAppointments(AppointmentMapper.toDtoList(appointmentRepo.findUpcomingByPatientId(em, id, now, 5)));
-            dto.setRecentInvoices(invoiceMapper.toDtoList(invoiceRepo.findByPatientId(em, id).stream().limit(5).toList()));
-            dto.setLatestMedicalRecord(MedicalRecordMapper.toDto(medicalRecordRepo.findLatestByPatientId(em, id)));
+
+            Long upcomingCount = appointmentRepo.countUpcomingByPatientId(em, id, now);
+            dto.setUpcomingAppointmentsCount(upcomingCount == null ? 0L : upcomingCount);
+
+            Long unpaidCount = invoiceRepo.countUnpaidByPatientId(em, id);
+            dto.setUnpaidInvoicesCount(unpaidCount == null ? 0L : unpaidCount);
+
+            Double unpaidTotal = invoiceRepo.sumUnpaidByPatientId(em, id);
+            dto.setUnpaidInvoicesTotal(unpaidTotal == null ? 0.0 : unpaidTotal);
+
+            List<MedicalRecord> records = medicalRecordRepo.findByPatientId(em, id);
+            dto.setTotalMedicalRecords(records == null ? 0L : records.size());
+
+            List<Appointment> upcomingAppts = appointmentRepo.findUpcomingByPatientId(em, id, now, 5);
+            dto.setUpcomingAppointments(upcomingAppts == null ? List.of() : AppointmentMapper.toDtoList(upcomingAppts));
+
+            List<Invoice> recentInvoices = invoiceRepo.findByPatientId(em, id);
+            if (recentInvoices != null) {
+                dto.setRecentInvoices(invoiceMapper.toDtoList(recentInvoices.stream().limit(5).toList()));
+            } else {
+                dto.setRecentInvoices(List.of());
+            }
+
+            MedicalRecord latestRecord = medicalRecordRepo.findLatestByPatientId(em, id);
+            dto.setLatestMedicalRecord(latestRecord == null ? null : MedicalRecordMapper.toDto(latestRecord));
+
             return ResponseEntity.ok(dto);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi Backend Java: " + e.getMessage());
         } finally {
             em.close();
         }
@@ -141,6 +162,7 @@ public class PatientController {
             appointment.setReason(dto.getReason());
             appointment.setStatus(dto.getStatus() == null ? AppointmentStatus.PENDING : dto.getStatus());
             appointmentRepo.save(em, appointment);
+            em.flush();
 
             Invoice invoice = new Invoice();
             invoice.setAppointment(appointment);
@@ -374,5 +396,62 @@ public class PatientController {
         }
         Long count = query.getSingleResult();
         return count != null && count > 0;
+    }
+
+    @PutMapping("/{patientId}/appointments/{appointmentId}")
+    public ResponseEntity<?> updatePatientAppointment(
+            @PathVariable Integer patientId,
+            @PathVariable Integer appointmentId,
+            @RequestBody AppointmentDto dto) {
+        EntityManager em = EntityManagerProvider.em();
+        try {
+            em.getTransaction().begin();
+            Appointment appointment = appointmentRepo.findById(em, appointmentId);
+
+            if (appointment == null || !appointment.getPatient().getId().equals(patientId)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy lịch hẹn");
+            }
+            if (appointment.getStatus() != AppointmentStatus.PENDING) {
+                return ResponseEntity.badRequest().body("Chỉ có thể sửa lịch hẹn khi đang ở trạng thái PENDING");
+            }
+
+            if (dto.getStartTime() != null) {
+                appointment.setStartTime(dto.getStartTime());
+                appointment.setAppointment_date(dto.getStartTime().toLocalDate());
+            }
+            if (dto.getReason() != null) appointment.setReason(dto.getReason());
+
+            appointmentRepo.save(em, appointment);
+            em.getTransaction().commit();
+            return ResponseEntity.ok(AppointmentMapper.toDto(appointment));
+        } catch (Exception e) {
+            rollback(em);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } finally {
+            em.close();
+        }
+    }
+
+    @PutMapping("/{patientId}/invoices/{invoiceId}/pay")
+    public ResponseEntity<?> payInvoice(@PathVariable Integer patientId, @PathVariable Integer invoiceId) {
+        EntityManager em = EntityManagerProvider.em();
+        try {
+            em.getTransaction().begin();
+            Invoice invoice = em.find(Invoice.class, invoiceId);
+
+            if (invoice == null || !invoice.getPatient().getId().equals(patientId)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy hóa đơn");
+            }
+
+            invoice.setStatus(InvoiceStatus.PAID);
+            em.merge(invoice);
+            em.getTransaction().commit();
+            return ResponseEntity.ok("Thanh toán thành công");
+        } catch (Exception e) {
+            rollback(em);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } finally {
+            em.close();
+        }
     }
 }

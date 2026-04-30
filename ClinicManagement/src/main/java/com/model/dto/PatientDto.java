@@ -31,6 +31,10 @@ public class PatientDto {
         this.cccd = cccd;
         this.insuranceCode = insuranceCode;
     }
+    private String avatar;
+
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
 
     private Integer visitCount;
     private List<MedicalRecordDto> history;

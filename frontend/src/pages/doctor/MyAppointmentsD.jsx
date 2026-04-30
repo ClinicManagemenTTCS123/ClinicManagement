@@ -46,6 +46,35 @@ const MyAppointmentsD = () => {
     const [openDropdownId, setOpenDropdownId] = useState(null);
     const [isExamModalOpen, setIsExamModalOpen] = useState(false);
     const [selectedApt, setSelectedApt] = useState(null);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewRecordData, setViewRecordData] = useState(null);
+    const [isFetchingRecord, setIsFetchingRecord] = useState(false);
+
+    const openViewModal = async (apt) => {
+        setSelectedApt(apt);
+        setOpenDropdownId(null);
+        setViewRecordData(null);
+        setIsViewModalOpen(true);
+        setIsFetchingRecord(true);
+
+        try {
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+            const res = await axios.get(`${apiUrl}/medical-records/by-appointment/${apt.id}`, {
+                params: { _t: new Date().getTime() }
+            });
+
+            if (res.data && res.data.id) {
+                setViewRecordData(res.data);
+            } else {
+                setViewRecordData({ notFound: true });
+            }
+        } catch (error) {
+            console.error("Lỗi lấy dữ liệu hồ sơ", error);
+            setViewRecordData({ notFound: true });
+        } finally {
+            setIsFetchingRecord(false);
+        }
+    };
 
     const [examData, setExamData] = useState({
         symptoms: '',
@@ -290,7 +319,10 @@ const MyAppointmentsD = () => {
                                                     >
                                                         <Stethoscope size={14} /> Khám bệnh
                                                     </button>
-                                                    <button className="w-full text-left px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => openViewModal(apt)}
+                                                        className="w-full text-left px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-2"
+                                                    >
                                                         <ClipboardList size={14} /> Xem hồ sơ
                                                     </button>
                                                 </div>
@@ -427,6 +459,92 @@ const MyAppointmentsD = () => {
                             </button>
                             <button onClick={submitExamRecord} className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all flex items-center gap-2">
                                 <ClipboardList size={16}/> Lưu chỉ định & Hồ sơ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* MODAL XEM HỒ SƠ */}
+            {isViewModalOpen && selectedApt && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[24px] w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+
+                        <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <ClipboardList className="text-blue-500" />
+                                Chi tiết hồ sơ bệnh án
+                            </h2>
+                            <button onClick={() => setIsViewModalOpen(false)} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-8 overflow-y-auto flex-1 bg-slate-50/50 space-y-6">
+                            <div className="bg-white p-5 rounded-2xl border border-blue-50 shadow-sm flex items-start gap-4">
+                                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg">
+                                    {selectedApt.patientName?.charAt(0) || 'U'}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-bold text-slate-800">{selectedApt.patientName}</h3>
+                                    <div className="flex gap-6 mt-1 text-sm text-slate-500">
+                                        <p><span className="font-medium text-slate-400">Mã LH:</span> #{selectedApt.id}</p>
+                                        <p><span className="font-medium text-slate-400">Ngày khám:</span> {selectedApt.appointment_date}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {isFetchingRecord ? (
+                                <div className="text-center py-10 text-blue-500 font-medium">Đang tải hồ sơ...</div>
+                            ) : viewRecordData?.notFound ? (
+                                <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
+                                    <p className="text-gray-500 font-medium">Chưa có hồ sơ bệnh án cho lịch hẹn này.</p>
+                                    <p className="text-sm text-gray-400 mt-1">Vui lòng chọn tính năng "Khám bệnh" để tạo hồ sơ mới.</p>
+                                </div>
+                            ) : (
+                                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Triệu chứng / Lý do khám</label>
+                                            <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700">{viewRecordData?.symptoms || 'Không có ghi nhận'}</div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Vị trí Răng</label>
+                                            <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700">{viewRecordData?.toothDetails || 'Không có'}</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Chẩn đoán</label>
+                                        <div className="p-3 bg-gray-50 rounded-xl text-sm font-semibold text-blue-700">{viewRecordData?.diagnosis || 'Chưa chẩn đoán'}</div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Chỉ định chụp phim</label>
+                                            <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700">{viewRecordData?.indications || 'Không có'}</div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Dịch vụ điều trị</label>
+                                            <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700">{viewRecordData?.services || 'Không có'}</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Đơn thuốc</label>
+                                        <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700 whitespace-pre-wrap">{viewRecordData?.prescription || 'Không có đơn thuốc'}</div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Ghi chú bác sĩ</label>
+                                        <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700 italic">{viewRecordData?.notes || 'Không có ghi chú'}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-8 py-5 border-t border-gray-100 bg-white flex justify-end">
+                            <button onClick={() => setIsViewModalOpen(false)} className="px-6 py-2.5 rounded-xl bg-gray-100 text-slate-600 font-semibold hover:bg-gray-200 transition-colors">
+                                Đóng
                             </button>
                         </div>
                     </div>

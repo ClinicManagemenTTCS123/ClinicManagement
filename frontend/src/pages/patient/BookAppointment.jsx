@@ -7,66 +7,89 @@ import {
     Calendar as CalendarIcon,
     Clock,
     Lightbulb,
-    CheckCircle2
+    CheckCircle2,
+    Loader2
 } from 'lucide-react';
+import { doctorService } from '../../services/doctorService';
+import api from '../../services/api';
+const generateNext7Days = () => {
+    const dates = [];
+    for (let i = 1; i <= 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        dates.push({
+            fullDate: d.toISOString().split('T')[0], // YYYY-MM-DD
+            dayStr: `T${d.getDay() === 0 ? 'CN' : d.getDay() + 1}`,
+            dateNum: d.getDate(),
+            monthStr: `Th${d.getMonth() + 1}`
+        });
+    }
+    return dates;
+};
 
-// --- MOCK DATA ---
-const MOCK_DOCTORS = [
-    { id: 'NL', name: 'BS. Nguyễn Thị Lan', specialty: 'Nội khoa', rating: '4.9/5.0', color: 'bg-blue-500' },
-    { id: 'TM', name: 'BS. Trần Văn Minh', specialty: 'Tim mạch', rating: '4.8/5.0', color: 'bg-blue-500' },
-    { id: 'PH', name: 'BS. Phạm Thị Hoa', specialty: 'Da liễu', rating: '4.7/5.0', color: 'bg-blue-500' },
-    { id: 'LH', name: 'BS. Lê Quang Hùng', specialty: 'Chỉnh hình', rating: '4.9/5.0', color: 'bg-blue-500' },
-    { id: 'VM', name: 'BS. Võ Thị Mai', specialty: 'Thần kinh', rating: '4.6/5.0', color: 'bg-blue-500' },
-    { id: 'HN', name: 'BS. Hoàng Đức Nam', specialty: 'Nhi khoa', rating: '4.8/5.0', color: 'bg-blue-500' },
-];
-
-const MOCK_DATES = [
-    { day: 'T2', date: '16', month: 'Th3' },
-    { day: 'T3', date: '17', month: 'Th3' },
-    { day: 'T4', date: '18', month: 'Th3' },
-    { day: 'T5', date: '19', month: 'Th3' },
-    { day: 'T6', date: '20', month: 'Th3' },
-    { day: 'T7', date: '21', month: 'Th3' },
-    { day: 'T2', date: '23', month: 'Th3' },
-    { day: 'T3', date: '24', month: 'Th3' },
-    { day: 'T4', date: '25', month: 'Th3' },
-    { day: 'T5', date: '26', month: 'Th3' },
-    { day: 'T6', date: '27', month: 'Th3' },
-    { day: 'T7', date: '28', month: 'Th3' },
-];
-
-const MOCK_TIMES = ['08:00', '09:00', '10:00', '14:00', '15:00'];
+const AVAILABLE_TIMES = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00'];
 
 const BookAppointment = () => {
     const navigate = useNavigate();
+    const patientId = localStorage.getItem("patientId") || "1";
 
-    // --- STATES ---
     const [step, setStep] = useState(1);
+    const [doctors, setDoctors] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Step 1: Doctor selection
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDoctor, setSelectedDoctor] = useState(null);
-
-    // Step 2: Date & Time selection
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTime, setSelectedTime] = useState(null);
     const [reason, setReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // --- HANDLERS ---
-    const handleDoctorSelect = (doctor) => {
-        setSelectedDoctor(doctor);
-        setStep(2);
+    const generatedDates = generateNext7Days();
+
+    useEffect(() => {
+        const fetchDoctors = async () => {
+            try {
+                const response = await doctorService.search({});
+                console.log("Dữ liệu API trả về:", response);
+                let data = response.data || response;
+                if (data.content) {
+                    data = data.content;
+                }
+
+                setDoctors(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error("Lỗi fetch bác sĩ:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDoctors();
+    }, []);
+    const handleConfirm = async () => {
+        setIsSubmitting(true);
+        try {
+            const dateTimeString = `${selectedDate.fullDate}T${selectedTime}:00`;
+
+            const payload = {
+                doctorId: selectedDoctor.id,
+                departmentId: selectedDoctor.departmentId,
+                startTime: dateTimeString,
+                reason: reason,
+                status: 'PENDING'
+            };
+            const res = await api.post(`/patients/${patientId}/appointments`, payload);
+
+            setStep(4);
+            setTimeout(() => navigate('/patient/my-appointments'), 2500);
+
+        } catch (err) {
+            const errText = err.response?.data || err.message || "Lỗi không xác định";
+            alert(`Lỗi đặt lịch: ${errText}`);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const handleConfirm = () => {
-        setStep(4); // Chuyển sang màn hình Thành công
-        // Giả lập gọi API và chuyển trang sau 2.5 giây
-        setTimeout(() => {
-            navigate('/patient/my-appointments');
-        }, 2500);
-    };
-
-    // --- RENDER HELPERS ---
     const renderStepper = () => {
         const steps = [
             { num: 1, label: 'Chọn bác sĩ' },
@@ -100,14 +123,14 @@ const BookAppointment = () => {
         );
     };
 
+    if (loading) return <div className="flex flex-col items-center justify-center min-h-[300px] text-blue-500"><Loader2 className="animate-spin mb-2" size={32} />Đang tải danh sách bác sĩ...</div>;
+
     return (
         <div className="max-w-4xl">
-            {/* Header Stepper */}
             {step < 4 && renderStepper()}
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
 
-                {/* --- BƯỚC 1: CHỌN BÁC SĨ --- */}
                 {step === 1 && (
                     <div className="animate-in fade-in duration-300">
                         <div className="mb-6">
@@ -127,23 +150,20 @@ const BookAppointment = () => {
                         </div>
 
                         <div className="grid grid-cols-1 gap-3">
-                            {MOCK_DOCTORS.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()) || d.specialty.toLowerCase().includes(searchQuery.toLowerCase())).map((doctor) => (
+                            {doctors.filter(d => d.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) || d.departmentName?.toLowerCase().includes(searchQuery.toLowerCase())).map((doctor) => (
                                 <div
                                     key={doctor.id}
-                                    onClick={() => handleDoctorSelect(doctor)}
+                                    onClick={() => { setSelectedDoctor(doctor); setStep(2); }}
                                     className="flex items-center justify-between p-4 rounded-xl border border-gray-50 hover:bg-blue-50/50 hover:border-blue-100 cursor-pointer transition-all group"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${doctor.color}`}>
-                                            {doctor.id}
+                                        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-500 text-white font-bold">
+                                            {doctor.fullName?.charAt(0) || 'BS'}
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{doctor.name}</h4>
+                                            <h4 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{doctor.fullName}</h4>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{doctor.specialty}</span>
-                                                <span className="text-xs text-amber-500 font-medium flex items-center gap-1">
-                                                    ★ {doctor.rating}
-                                                </span>
+                                                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{doctor.departmentName || 'Chưa rõ khoa'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -154,69 +174,59 @@ const BookAppointment = () => {
                     </div>
                 )}
 
-                {/* --- BƯỚC 2: CHỌN NGÀY GIỜ --- */}
                 {step === 2 && selectedDoctor && (
                     <div className="animate-in slide-in-from-right-4 duration-300">
-                        {/* Selected Doctor Card */}
+
                         <div className="flex items-center justify-between p-4 rounded-xl bg-blue-50/50 mb-8 border border-blue-100">
                             <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${selectedDoctor.color}`}>
-                                    {selectedDoctor.id}
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-500 text-white font-bold">
+                                    {selectedDoctor.fullName?.charAt(0) || 'BS'}
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-slate-800">{selectedDoctor.name}</h4>
-                                    <p className="text-xs text-slate-500">{selectedDoctor.specialty}</p>
+                                    <h4 className="font-bold text-slate-800">{selectedDoctor.fullName}</h4>
+                                    <p className="text-xs text-slate-500">{selectedDoctor.departmentName}</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setStep(1)}
-                                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                            >
+                            <button onClick={() => setStep(1)} className="text-sm font-semibold text-blue-600 hover:text-blue-700">
                                 Đổi
                             </button>
                         </div>
 
-                        {/* Date Selection */}
                         <div className="mb-8">
                             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
                                 <CalendarIcon size={18} className="text-blue-500"/> Chọn ngày khám
                             </h3>
                             <div className="flex flex-wrap gap-3">
-                                {MOCK_DATES.map((d, idx) => {
-                                    const isSelected = selectedDate === d.date;
+                                {generatedDates.map((d, idx) => {
+                                    const isSelected = selectedDate?.fullDate === d.fullDate;
                                     return (
                                         <button
                                             key={idx}
-                                            onClick={() => { setSelectedDate(d.date); setSelectedTime(null); }}
+                                            onClick={() => { setSelectedDate(d); setSelectedTime(null); }}
                                             className={`flex flex-col items-center justify-center w-[72px] h-[88px] rounded-xl border transition-all
-                                                ${isSelected
-                                                ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20'
-                                                : 'bg-slate-50 border-transparent text-slate-600 hover:border-blue-200 hover:bg-white'}`}
+                                                ${isSelected ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20' : 'bg-slate-50 border-transparent text-slate-600 hover:border-blue-200 hover:bg-white'}`}
                                         >
-                                            <span className={`text-[11px] font-semibold uppercase ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{d.day}</span>
-                                            <span className="text-xl font-bold my-0.5">{d.date}</span>
-                                            <span className={`text-[11px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{d.month}</span>
+                                            <span className={`text-[11px] font-semibold uppercase ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{d.dayStr}</span>
+                                            <span className="text-xl font-bold my-0.5">{d.dateNum}</span>
+                                            <span className={`text-[11px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>{d.monthStr}</span>
                                         </button>
                                     );
                                 })}
                             </div>
                         </div>
 
-                        {/* Time Selection */}
                         {selectedDate && (
                             <div className="mb-8 animate-in fade-in duration-300">
                                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
                                     <Clock size={18} className="text-blue-500"/> Chọn giờ khám
                                 </h3>
                                 <div className="flex flex-wrap gap-3">
-                                    {MOCK_TIMES.map((time, idx) => (
+                                    {AVAILABLE_TIMES.map((time, idx) => (
                                         <button
                                             key={idx}
                                             onClick={() => setSelectedTime(time)}
                                             className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all border
-                                                ${selectedTime === time
-                                                ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20'
-                                                : 'bg-slate-50 border-transparent text-slate-600 hover:border-blue-200 hover:bg-white'}`}
+                                                ${selectedTime === time ? 'bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20' : 'bg-slate-50 border-transparent text-slate-600 hover:border-blue-200 hover:bg-white'}`}
                                         >
                                             {time}
                                         </button>
@@ -225,7 +235,6 @@ const BookAppointment = () => {
                             </div>
                         )}
 
-                        {/* Reason Input */}
                         <div className="mb-8">
                             <h3 className="text-sm font-bold text-slate-800 mb-2">Lý do khám (tùy chọn)</h3>
                             <textarea
@@ -236,7 +245,6 @@ const BookAppointment = () => {
                             ></textarea>
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="flex gap-4">
                             <button
                                 onClick={() => setStep(1)}
@@ -256,7 +264,6 @@ const BookAppointment = () => {
                     </div>
                 )}
 
-                {/* --- BƯỚC 3: XÁC NHẬN --- */}
                 {step === 3 && (
                     <div className="animate-in slide-in-from-right-4 duration-300">
                         <div className="mb-6">
@@ -268,23 +275,21 @@ const BookAppointment = () => {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center py-2 border-b border-gray-200/60">
                                     <span className="text-sm text-slate-500">Bác sĩ</span>
-                                    <span className="text-sm font-bold text-slate-800">{selectedDoctor?.name}</span>
+                                    <span className="text-sm font-bold text-slate-800">{selectedDoctor?.fullName}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b border-gray-200/60">
                                     <span className="text-sm text-slate-500">Chuyên khoa</span>
-                                    <span className="text-sm font-bold text-slate-800">{selectedDoctor?.specialty}</span>
+                                    <span className="text-sm font-bold text-slate-800">{selectedDoctor?.departmentName}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b border-gray-200/60">
                                     <span className="text-sm text-slate-500">Ngày khám</span>
-                                    <span className="text-sm font-bold text-slate-800">{selectedDate}/03/2026</span>
+                                    <span className="text-sm font-bold text-slate-800">
+                                        {selectedDate?.dayStr}, {selectedDate?.dateNum} {selectedDate?.monthStr}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b border-gray-200/60">
                                     <span className="text-sm text-slate-500">Giờ khám</span>
                                     <span className="text-sm font-bold text-slate-800">{selectedTime}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-2 border-b border-gray-200/60">
-                                    <span className="text-sm text-slate-500">Bệnh nhân</span>
-                                    <span className="text-sm font-bold text-slate-800">Nguyễn Văn An</span>
                                 </div>
                                 <div className="flex justify-between items-start py-2">
                                     <span className="text-sm text-slate-500">Lý do khám</span>
@@ -300,7 +305,7 @@ const BookAppointment = () => {
                             <div>
                                 <h4 className="text-sm font-bold text-blue-800">Hóa đơn tự động</h4>
                                 <p className="text-xs text-blue-600/80 mt-1">
-                                    Sau khi đặt lịch, hệ thống sẽ tự động tạo hóa đơn phí khám cho bạn. Vui lòng thanh toán trước khi đến khám.
+                                    Sau khi đặt lịch thành công, hệ thống sẽ tự động tạo hóa đơn khám bệnh. Vui lòng thanh toán trước khi đến khám.
                                 </p>
                             </div>
                         </div>
@@ -314,15 +319,15 @@ const BookAppointment = () => {
                             </button>
                             <button
                                 onClick={handleConfirm}
-                                className="px-8 py-3 rounded-xl font-semibold text-white bg-[#1DA1F2] hover:bg-blue-500 shadow-md shadow-blue-500/20 flex-1 transition-all"
+                                disabled={isSubmitting}
+                                className="px-8 py-3 rounded-xl font-semibold text-white bg-[#1DA1F2] hover:bg-blue-500 flex-1 transition-all flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                Xác nhận đặt lịch
+                                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "Xác nhận đặt lịch"}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* --- BƯỚC 4: THÀNH CÔNG --- */}
                 {step === 4 && (
                     <div className="py-12 flex flex-col items-center justify-center animate-in zoom-in-95 duration-500">
                         <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
@@ -333,7 +338,7 @@ const BookAppointment = () => {
                             Hệ thống đã ghi nhận lịch hẹn và tạo hóa đơn tự động.
                         </p>
                         <p className="text-blue-500 text-sm font-medium animate-pulse">
-                            Đang chuyển đến trang lịch hẹn...
+                            Đang tự động chuyển đến trang lịch hẹn...
                         </p>
                     </div>
                 )}

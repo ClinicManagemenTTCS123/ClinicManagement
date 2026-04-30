@@ -1,145 +1,152 @@
-import React, { useState } from 'react';
-import { Clock, CheckCircle2, Download, User, Calendar, Receipt, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Clock, CheckCircle2, Download, User, Calendar, Receipt, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
-// Mock data mở rộng để demo phân trang
-const invoicesData = [
-    { id: "INV1", doctorName: "BS. Nguyễn Thị Lan", specialty: "Nội khoa", patientName: "Nguyễn Văn An", date: "18/03/2025", amount: 350000, status: "unpaid" },
-    { id: "INV2", doctorName: "BS. Trần Văn Minh", specialty: "Tim mạch", patientName: "Nguyễn Văn An", date: "22/03/2025", amount: 500000, status: "unpaid" },
-    { id: "INV3", doctorName: "BS. Phạm Thị Hoa", specialty: "Da liễu", patientName: "Nguyễn Văn An", date: "28/02/2025", amount: 280000, status: "paid" },
-    { id: "INV4", doctorName: "BS. Lê Quang Hùng", specialty: "Chỉnh hình", patientName: "Nguyễn Văn An", date: "15/02/2025", amount: 420000, status: "overdue" },
-    { id: "INV5", doctorName: "BS. Võ Thị Mai", specialty: "Thần kinh", patientName: "Nguyễn Văn An", date: "10/02/2025", amount: 450000, status: "paid" },
-    { id: "INV6", doctorName: "BS. Hoàng Đức Nam", specialty: "Nhi khoa", patientName: "Nguyễn Văn An", date: "05/02/2025", amount: 300000, status: "paid" },
-    { id: "INV7", doctorName: "BS. Ngô Bảo Châu", specialty: "Nội khoa", patientName: "Nguyễn Văn An", date: "01/02/2025", amount: 350000, status: "unpaid" },
-];
-
-const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
-};
+import { patientService } from '../../services/patientService';
+import api from '../../services/api';
 
 export default function PatientBilling() {
+    const patientId = localStorage.getItem("patientId") || "1";
+
+    const [invoices, setInvoices] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 3; // Số lượng hóa đơn mỗi trang
+    const itemsPerPage = 3;
 
-    // 1. Lọc dữ liệu theo Tab
-    const filteredInvoices = invoicesData.filter(invoice => {
+    // Fetch dữ liệu qua Service
+    const fetchInvoices = async () => {
+        try {
+            setLoading(true);
+            const response = await patientService.getInvoices(patientId);
+            const data = response.data || response;
+            setInvoices(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Lỗi lấy hóa đơn:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchInvoices();
+    }, [patientId]);
+
+    // Xử lý thanh toán sử dụng instance axios chung
+    const handlePayment = async (invoiceId) => {
+        if (!window.confirm("Xác nhận thanh toán hóa đơn này?")) return;
+        try {
+            // Sử dụng file api.js của bạn để tự động có BaseURL và Interceptor
+            await api.put(`/patients/${patientId}/invoices/${invoiceId}/pay`);
+            alert("Thanh toán thành công!");
+            fetchInvoices(); // Load lại dữ liệu
+        } catch (error) {
+            console.error("Lỗi thanh toán:", error);
+            alert("Đã xảy ra lỗi khi thanh toán");
+        }
+    }
+
+    const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN').format(amount || 0) + ' đ';
+    const formatDate = (dateArr) => {
+        if(!dateArr) return '';
+        if(Array.isArray(dateArr)) {
+            return new Date(dateArr[0], dateArr[1]-1, dateArr[2], dateArr[3], dateArr[4]).toLocaleString('vi-VN');
+        }
+        return new Date(dateArr).toLocaleString('vi-VN');
+    };
+
+    // Tính toán Summary
+    const totalUnpaid = invoices.filter(i => i.status === 'UNPAID').reduce((sum, i) => sum + i.total, 0);
+    const totalPaid = invoices.filter(i => i.status === 'PAID').reduce((sum, i) => sum + i.total, 0);
+
+    // Phân trang & Lọc
+    const filteredInvoices = invoices.filter(invoice => {
         if (activeTab === "all") return true;
         return invoice.status === activeTab;
     });
 
-    // 2. Tính toán phân trang
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredInvoices.slice(indexOfFirstItem, indexOfLastItem);
+    const currentItems = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    // Reset về trang 1 khi đổi Tab
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
         setCurrentPage(1);
     };
 
-    // Component Badge nội bộ
     const CustomBadge = ({ status }) => {
-        const styles = {
-            unpaid: "bg-orange-50 text-orange-600 border-orange-100",
-            paid: "bg-green-50 text-green-600 border-green-100",
-            overdue: "bg-red-50 text-red-600 border-red-100"
-        };
-        const icons = {
-            unpaid: <Clock className="w-3.5 h-3.5 mr-1.5" />,
-            paid: <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />,
-            overdue: <AlertCircle className="w-3.5 h-3.5 mr-1.5" />
-        };
-        const labels = { unpaid: "Chưa thanh toán", paid: "Đã thanh toán", overdue: "Quá hạn" };
-
-        return (
-            <div className={`flex items-center border px-3 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-                {icons[status]} {labels[status]}
-            </div>
-        );
+        if (status === 'UNPAID') return <div className="flex items-center border px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border-orange-100"><Clock className="w-3.5 h-3.5 mr-1.5"/> Chưa thanh toán</div>;
+        if (status === 'PAID') return <div className="flex items-center border px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-600 border-green-100"><CheckCircle2 className="w-3.5 h-3.5 mr-1.5"/> Đã thanh toán</div>;
+        return null;
     };
+
+    if (loading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-blue-500"/></div>;
 
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-6 bg-slate-50/50 min-h-screen">
-            {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-slate-800">Hóa đơn khám bệnh</h1>
                 <p className="text-slate-500 mt-1">Quản lý và thanh toán hóa đơn của bạn</p>
             </div>
 
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                    <div className="bg-orange-50 p-3 rounded-full"><Clock className="w-6 h-6 text-orange-500" /></div>
+                    <div className="bg-orange-50 p-3 rounded-full"><Clock className="w-6 h-6 text-orange-500"/></div>
                     <div>
                         <p className="text-sm text-slate-500 font-medium">Cần thanh toán</p>
-                        <h2 className="text-2xl font-bold text-slate-800">850.000 đ</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">{formatCurrency(totalUnpaid)}</h2>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                    <div className="bg-green-50 p-3 rounded-full"><CheckCircle2 className="w-6 h-6 text-green-500" /></div>
+                    <div className="bg-green-50 p-3 rounded-full"><CheckCircle2 className="w-6 h-6 text-green-500"/></div>
                     <div>
                         <p className="text-sm text-slate-500 font-medium">Đã thanh toán</p>
-                        <h2 className="text-2xl font-bold text-slate-800">280.000 đ</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">{formatCurrency(totalPaid)}</h2>
                     </div>
                 </div>
             </div>
 
-            {/* Tabs */}
             <div className="bg-slate-100/80 p-1 rounded-xl flex gap-1 w-fit">
                 {[
                     { id: 'all', label: 'Tất cả' },
-                    { id: 'unpaid', label: 'Chưa thanh toán' },
-                    { id: 'paid', label: 'Đã thanh toán' },
-                    { id: 'overdue', label: 'Quá hạn' }
+                    { id: 'UNPAID', label: 'Chưa thanh toán' },
+                    { id: 'PAID', label: 'Đã thanh toán' }
                 ].map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => handleTabChange(tab.id)}
-                        className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-                            activeTab === tab.id ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                        }`}
-                    >
+                    <button key={tab.id} onClick={() => handleTabChange(tab.id)}
+                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                         {tab.label}
                     </button>
                 ))}
             </div>
 
-            {/* Invoice List */}
             <div className="space-y-4">
+                {currentItems.length === 0 && <div className="text-center py-10 text-gray-400">Không có hóa đơn nào</div>}
+
                 {currentItems.map((invoice) => (
                     <div key={invoice.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-300">
                         <div className="p-5 flex justify-between items-start border-b border-gray-50">
                             <div>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">{invoice.id}</p>
-                                <h3 className="text-base font-bold text-slate-800">{invoice.doctorName}</h3>
-                                <p className="text-sm text-slate-500">{invoice.specialty}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Mã Hóa Đơn: #{invoice.id}</p>
+                                <h3 className="text-base font-bold text-slate-800">{invoice.details}</h3>
                             </div>
-                            <CustomBadge status={invoice.status} />
+                            <CustomBadge status="{invoice.status}"/>
                         </div>
 
-                        <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-gray-50 bg-slate-50/30">
+                        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-50 bg-slate-50/30">
                             <div>
-                                <p className="flex items-center text-[11px] text-slate-400 font-bold uppercase mb-1"><User className="w-3 h-3 mr-1" /> Bệnh nhân</p>
-                                <p className="text-sm font-semibold text-slate-700">{invoice.patientName}</p>
+                                <p className="flex items-center text-[11px] text-slate-400 font-bold uppercase mb-1"><Calendar className="w-3 h-3 mr-1"/> Ngày tạo</p>
+                                <p className="text-sm font-semibold text-slate-700">{formatDate(invoice.createdAt)}</p>
                             </div>
                             <div>
-                                <p className="flex items-center text-[11px] text-slate-400 font-bold uppercase mb-1"><Calendar className="w-3 h-3 mr-1" /> Ngày khám</p>
-                                <p className="text-sm font-semibold text-slate-700">{invoice.date}</p>
-                            </div>
-                            <div>
-                                <p className="flex items-center text-[11px] text-slate-400 font-bold uppercase mb-1"><Receipt className="w-3 h-3 mr-1" /> Phí khám</p>
-                                <p className="text-sm font-bold text-slate-800">{formatCurrency(invoice.amount)}</p>
+                                <p className="flex items-center text-[11px] text-slate-400 font-bold uppercase mb-1"><Receipt className="w-3 h-3 mr-1"/> Tổng tiền</p>
+                                <p className="text-sm font-bold text-slate-800 text-blue-600">{formatCurrency(invoice.total)}</p>
                             </div>
                         </div>
 
                         <div className="p-4 flex items-center justify-between bg-white">
                             <button className="flex items-center text-slate-500 hover:text-slate-800 transition-colors px-3 py-2 rounded-lg hover:bg-slate-50">
-                                <Download className="w-4 h-4 mr-2" /> <span className="text-sm font-semibold">Tải hóa đơn</span>
+                                <Download className="w-4 h-4 mr-2"/> <span className="text-sm font-semibold">Tải PDF</span>
                             </button>
-                            {(invoice.status === 'unpaid' || invoice.status === 'overdue') && (
-                                <button className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm rounded-xl px-6 py-2.5 shadow-lg shadow-sky-200 transition-all">
+                            {invoice.status === 'UNPAID' && (
+                                <button onClick={() => handlePayment(invoice.id)} className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm rounded-xl px-6 py-2.5 shadow-lg shadow-sky-200 transition-all">
                                     Thanh toán ngay
                                 </button>
                             )}
@@ -148,7 +155,7 @@ export default function PatientBilling() {
                 ))}
             </div>
 
-            {/* Pagination Controls */}
+
             {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8 pb-10">
                     <button
@@ -158,7 +165,7 @@ export default function PatientBilling() {
                             currentPage === 1 ? "text-slate-300 border-gray-100" : "text-slate-600 border-gray-200 hover:bg-white hover:border-sky-500"
                         }`}
                     >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size="{20}"/>
                     </button>
 
                     {[...Array(totalPages)].map((_, index) => (
@@ -182,7 +189,7 @@ export default function PatientBilling() {
                             currentPage === totalPages ? "text-slate-300 border-gray-100" : "text-slate-600 border-gray-200 hover:bg-white hover:border-sky-500"
                         }`}
                     >
-                        <ChevronRight size={20} />
+                        <ChevronRight size="{20}"/>
                     </button>
                 </div>
             )}

@@ -27,6 +27,7 @@ public final class DoctorMapper {
         dto.setConsultationFee(entity.getConsultationFee());
         dto.setDoctorStatus(entity.getStatus());
         dto.setNotes(entity.getNotes());
+        dto.setAvatar(entity.getAvatar());
         return dto;
 
     }
@@ -36,7 +37,6 @@ public final class DoctorMapper {
         if (dto == null) return null;
         Doctor e = new Doctor();
 
-        // Nếu DTO có id thì gán (tránh mất id khi update)
         e.setId(dto.getId());
 
         e.setFullName(dto.getFullName());
@@ -48,6 +48,7 @@ public final class DoctorMapper {
         e.setConsultationFee(dto.getConsultationFee());
         e.setStatus(dto.getDoctorStatus());
         e.setNotes(dto.getNotes());
+        e.setAvatar(dto.getAvatar());
 
         if (managedDept != null) e.setDepartment(managedDept);
 

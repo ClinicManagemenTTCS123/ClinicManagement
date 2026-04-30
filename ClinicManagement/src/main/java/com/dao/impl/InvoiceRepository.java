@@ -15,9 +15,28 @@ public class InvoiceRepository implements IInvoiceRepository {
                         "SELECT i FROM Invoice i " +
                                 "JOIN FETCH i.patient p " +
                                 "JOIN FETCH i.appointment a " +
+                                "LEFT JOIN FETCH a.doctor d " +
+                                "LEFT JOIN FETCH a.department dept " +
                                 "ORDER BY i.createdAt DESC",
                         Invoice.class
                 )
+                .getResultList();
+    }
+
+    @Override
+    public List<Invoice> findByCreatedAtBetween(EntityManager em, LocalDateTime from, LocalDateTime to) {
+        return em.createQuery(
+                        "SELECT i FROM Invoice i " +
+                                "JOIN FETCH i.patient p " +
+                                "JOIN FETCH i.appointment a " +
+                                "LEFT JOIN FETCH a.doctor d " +
+                                "LEFT JOIN FETCH a.department dept " +
+                                "WHERE i.createdAt BETWEEN :from AND :to " +
+                                "ORDER BY i.createdAt ASC",
+                        Invoice.class
+                )
+                .setParameter("from", from)
+                .setParameter("to", to)
                 .getResultList();
     }
 
@@ -30,20 +49,20 @@ public class InvoiceRepository implements IInvoiceRepository {
         return em.merge(invoice);
     }
 
-    @Override
-    public List<Invoice> findByCreatedAtBetween(EntityManager em, LocalDateTime from, LocalDateTime to) {
-        return em.createQuery(
-                        "SELECT i FROM Invoice i " +
-                                "JOIN FETCH i.patient p " +
-                                "JOIN FETCH i.appointment a " +
-                                "WHERE i.createdAt BETWEEN :from AND :to " +
-                                "ORDER BY i.createdAt ASC",
-                        Invoice.class
-                )
-                .setParameter("from", from)
-                .setParameter("to", to)
-                .getResultList();
-    }
+//    @Override
+//    public List<Invoice> findByCreatedAtBetween(EntityManager em, LocalDateTime from, LocalDateTime to) {
+//        return em.createQuery(
+//                        "SELECT i FROM Invoice i " +
+//                                "JOIN FETCH i.patient p " +
+//                                "JOIN FETCH i.appointment a " +
+//                                "WHERE i.createdAt BETWEEN :from AND :to " +
+//                                "ORDER BY i.createdAt ASC",
+//                        Invoice.class
+//                )
+//                .setParameter("from", from)
+//                .setParameter("to", to)
+//                .getResultList();
+//    }
 
     @Override
     public List<Invoice> findByPatientId(EntityManager em, Integer patientId) {

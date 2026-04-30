@@ -23,14 +23,14 @@ public class Doctor {
             foreignKey = @ForeignKey(name = "fk_doctor_department"))
     private Department department;
 
-    @Column(name = "fullName", nullable = false)
+    @Column(name = "full_name", nullable = false)
     private String fullName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Gender gender;
 
-    @Column(name = "dateOfBirth", nullable = false)
+    @Column(name = "date_of_birth", nullable = false)
     private LocalDate dateOfBirth;
 
     @Column(nullable = false)
@@ -42,7 +42,7 @@ public class Doctor {
     @Column
     private String address;
 
-    @Column(name = "consultationFee")
+    @Column(name = "consultation_fee")
     private Double consultationFee;
 
     @Column
@@ -58,7 +58,13 @@ public class Doctor {
     @OneToMany(mappedBy = "doctor")
     private Set<MedicalRecord> medicalRecords = new LinkedHashSet<>();
 
-    // --- Getters and Setters ---
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String avatar;
+
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
+
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }

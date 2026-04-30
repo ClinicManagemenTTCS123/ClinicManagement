@@ -165,4 +165,32 @@ public class AppointmentRepository {
         return count == null ? 0 : count;
     }
 
+    public List<Appointment> searchAllAppointmentsForAdmin(
+            EntityManager em, String search, String status, LocalDate startDate, LocalDate endDate) {
+
+        StringBuilder hql = new StringBuilder("SELECT a FROM Appointment a " +
+                "JOIN FETCH a.patient p " +
+                "JOIN FETCH a.department d " +
+                "LEFT JOIN FETCH a.doctor doc WHERE 1=1");
+
+        if (search != null && !search.trim().isEmpty()) {
+            hql.append(" AND (LOWER(p.fullName) LIKE LOWER(:search) OR CAST(a.id AS string) LIKE :search)");
+        }
+        if (status != null && !status.trim().isEmpty() && !status.equals("ALL")) {
+            hql.append(" AND a.status = :status");
+        }
+        if (startDate != null) hql.append(" AND a.appointment_date >= :startDate");
+        if (endDate != null) hql.append(" AND a.appointment_date <= :endDate");
+
+        hql.append(" ORDER BY a.appointment_date DESC, a.startTime DESC");
+
+        TypedQuery<Appointment> query = em.createQuery(hql.toString(), Appointment.class);
+        if (search != null && !search.trim().isEmpty()) query.setParameter("search", "%" + search.trim() + "%");
+        if (status != null && !status.trim().isEmpty() && !status.equals("ALL")) query.setParameter("status", AppointmentStatus.valueOf(status));
+        if (startDate != null) query.setParameter("startDate", startDate);
+        if (endDate != null) query.setParameter("endDate", endDate);
+
+        return query.getResultList();
+    }
+
 }

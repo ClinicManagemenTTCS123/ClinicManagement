@@ -37,7 +37,10 @@ public class DoctorDto {
         this.doctorStatus = doctorStatus;
     }
 
+    private String avatar;
 
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }

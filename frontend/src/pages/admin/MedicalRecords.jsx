@@ -1,164 +1,356 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Stethoscope, FileText, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Eye, Edit3, Loader2, X, Save, FileText,Calendar, User, Stethoscope, ChevronLeft, ChevronRight } from 'lucide-react';
+import medicalRecordService from '../../services/medicalRecordService';
 
-const MedicalRecordManagement = () => {
-    // =========================================================================
-    // PHẦN LOGIC (Dữ liệu mẫu, Lọc & Phân trang)
-    // =========================================================================
+const MedicalRecord = () => {
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
-    // Giả lập 25 hồ sơ bệnh án
-    const [records] = useState(Array.from({ length: 25 }, (_, i) => ({
-        id: `HS-${1024 + i}`,
-        patientName: i % 2 === 0 ? 'Nguyễn Thị Hoa' : 'Trần Văn Bảo',
-        doctorName: i % 3 === 0 ? 'BS. Nguyễn Văn An' : 'BS. Trần Thị Bình',
-        date: `2026-03-${String(10 + (i % 5)).padStart(2, '0')}`,
-        diagnosis: i % 4 === 0 ? 'Viêm họng cấp' : 'Thoái hóa cột sống',
-        treatment: i % 4 === 0 ? 'Kháng sinh, giảm đau' : 'Vật lý trị liệu'
-    })));
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('edit'); // 'edit' hoặc 'view'
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterDoctor, setFilterDoctor] = useState('All');
-    const [currentPage, setCurrentPage] = useState(1);
+  const initialFormState = {
+    id: '',
+    appointmentId: '',
+    patientId: '',
+    patientName: '',
+    doctorId: '',
+    doctorName: '',
+    symptoms: '',
+    diagnosis: '',
+    prescription: '',
+    notes: '',
+    toothDetails: '',
+    indications: '',
+    services: '',
+    createdAt: ''
+  };
+  const [formData, setFormData] = useState(initialFormState);
+
+  useEffect(() => {
+    loadRecords();
+  }, [searchTerm]);
+
+  const loadRecords = async () => {
+    try {
+      setLoading(true);
+      const data = await medicalRecordService.getAllRecords(searchTerm);
+      setRecords(data);
+    } catch (error) {
+      console.error("Lỗi load dữ liệu", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenModal = (record, mode) => {
+    setFormData({ ...initialFormState, ...record });
+    setViewMode(mode);
+    setIsModalOpen(true);
+  };
+
+  const handleChange = (e) => {
+    if (viewMode === 'view') return;
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (viewMode === 'view') return;
+    try {
+      await medicalRecordService.updateRecord(formData.id, formData);
+      alert("Cập nhật hồ sơ thành công!");
+      setIsModalOpen(false);
+      loadRecords();
+    } catch (error) {
+      alert("Lỗi khi cập nhật!");
+    }
+  };
+
+
+    // Số lượng bản ghi trên mỗi trang
     const itemsPerPage = 10;
+    const [currentPage, setCurrentPage] = useState(1);
 
-    // Logic tìm kiếm thông minh (Mã hồ sơ hoặc Tên bệnh nhân)
-    const filteredRecords = useMemo(() => {
-        return records.filter(rec => {
-            const matchSearch = rec.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                rec.id.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchDoctor = filterDoctor === 'All' || rec.doctorName === filterDoctor;
-            return matchSearch && matchDoctor;
-        });
-    }, [searchTerm, filterDoctor, records]);
+    // Tính toán dữ liệu cho trang hiện tại
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    // 'records' là mảng lấy từ API
+    const currentItems = records.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(records.length / itemsPerPage);
 
-    const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
-    const currentItems = filteredRecords.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    // Hàm chuyển trang
+    const handlePageChange = (pageNumber) => {
+      setCurrentPage(pageNumber);
+      // Cuộn lên đầu bảng khi chuyển trang (tùy chọn)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
-    return (
-        <div className="p-2 bg-gray-50 min-h-screen font-sans text-[#475467]">
-            <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+    // Reset về trang 1 mỗi khi tìm kiếm
+    useEffect(() => {
+      setCurrentPage(1);
+    }, [searchTerm]);
+  return (
+    <div className="p-5 bg-[#f8f9fa] min-h-screen">
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm p-5">
 
-                {/* Header & Smart Filter */}
-                <div className="p-8 border-b border-gray-50">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-[22px] font-bold text-gray-800 flex items-center gap-2">
-                            <FileText className="text-blue-600" /> Hồ sơ bệnh án
-                        </h2>
-                        <div className="flex gap-3">
-                            <button className="flex items-center gap-2 bg-[#2563eb] text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 text-sm font-semibold transition-all">
-                                <Stethoscope size={18} /> Lập hồ sơ mới
-                            </button>
-                        </div>
+        {/* Header & Search */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div className="flex items-center gap-3">
+
+            <h1 className="text-2xl font-bold text-[#1e293b]">Hồ sơ bệnh án</h1>
+          </div>
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Tìm kiếm mã hồ sơ, tên bệnh nhân..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Table danh sách */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-[#94a3b8] text-xs uppercase tracking-wider border-b border-gray-100">
+                <th className="py-4 px-4 font-semibold">Mã HS</th>
+                <th className="py-4 px-4 font-semibold">Bệnh nhân</th>
+                <th className="py-4 px-4 font-semibold">Bác sĩ khám</th>
+                <th className="py-4 px-4 font-semibold">Ngày tạo</th>
+                <th className="py-4 px-4 font-semibold">Chẩn đoán</th>
+                <th className="py-4 px-4 font-semibold text-center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {loading ? (
+                <tr><td colSpan="6" className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-500" /></td></tr>
+              ) : currentItems.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-50 transition-colors border-b border-gray-50">
+                  <td className="py-4 px-4 font-medium text-blue-600">HS-{item.id}</td>
+                  <td className="py-4 px-4 font-semibold text-gray-800">{item.patientName}</td>
+                  <td className="py-4 px-4 text-gray-600">{item.doctorName}</td>
+                  <td className="py-4 px-4 text-gray-500">{new Date(item.createdAt).toLocaleDateString('vi-VN')}</td>
+                  <td className="py-4 px-4"><span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">{item.diagnosis}</span></td>
+                  <td className="py-4 px-4">
+                    <div className="flex justify-center gap-2">
+                      <button onClick={() => handleOpenModal(item, 'view')} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-all" title="Xem">
+                        <Eye size={18} />
+                      </button>
+                      <button onClick={() => handleOpenModal(item, 'edit')} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-all" title="Sửa">
+                        <Edit3 size={18} />
+                      </button>
                     </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="relative flex-1 min-w-[300px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Tìm mã hồ sơ, tên bệnh nhân..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:bg-white transition-all"
-                                onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
-                            />
-                        </div>
+        {/* Pagination */}
 
-                        <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                            <select
-                                className="pl-9 pr-8 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm text-gray-600 outline-none appearance-none focus:border-blue-400"
-                                onChange={(e) => {setFilterDoctor(e.target.value); setCurrentPage(1);}}
-                            >
-                                <option value="All">Tất cả bác sĩ</option>
-                                <option value="BS. Nguyễn Văn An">BS. Nguyễn Văn An</option>
-                                <option value="BS. Trần Thị Bình">BS. Trần Thị Bình</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
+        <div className="mt-6 px-4 py-6 flex items-center justify-between border-t border-gray-50">
+            <p className="text-sm text-gray-400 font-medium">
+                Hiển thị {currentItems.length} trên {records.length} hồ sơ
+            </p>
+            <div className="flex items-center gap-1">
+                <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl disabled:opacity-20 transition-all"
+                >
+                    <ChevronLeft size={20} />
+                </button>
 
-                {/* Table Section */}
-                <div className="px-4">
-                    <table className="w-full text-left">
-                        <thead>
-                        <tr className="text-gray-400 text-[14px] border-b border-gray-50">
-                            <th className="py-4 px-6 font-medium uppercase">Mã HS</th>
-                            <th className="py-4 px-6 font-medium uppercase">Bệnh nhân</th>
-                            <th className="py-4 px-6 font-medium uppercase">Bác sĩ</th>
-                            <th className="py-4 px-6 font-medium uppercase">Ngày khám</th>
-                            <th className="py-4 px-6 font-medium uppercase">Chẩn đoán</th>
-                            <th className="py-4 px-6 text-center font-medium uppercase">Thao tác</th>
-                        </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                        {currentItems.map((rec) => (
-                            <tr key={rec.id} className="hover:bg-gray-50/80 transition-colors">
-                                <td className="py-5 px-6 font-semibold text-gray-400">{rec.id}</td>
-                                <td className="py-5 px-6 font-normal text-gray-900">{rec.patientName}</td>
-                                <td className="py-5 px-6 text-gray-500">{rec.doctorName}</td>
-                                <td className="py-5 px-6 text-gray-500">{rec.date}</td>
-                                <td className="py-5 px-6">
-                                    <div className="max-w-[200px] truncate text-gray-700 font-medium" title={rec.diagnosis}>
-                                        {rec.diagnosis}
-                                    </div>
-                                </td>
-                                <td className="py-5 px-6">
-                                    <div className="flex justify-center items-center gap-2">
-                                        {/* Thao tác đồng bộ: Xem, Sửa, Xóa */}
-                                        <button title="Xem hồ sơ" className="p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all">
-                                            <Eye size={18} />
-                                        </button>
-                                        <button title="Chỉnh sửa" className="p-2 text-orange-500 bg-orange-50 hover:bg-orange-100 rounded-xl transition-all">
-                                            <Edit size={18} />
-                                        </button>
-                                        <button title="Xóa" className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-all">
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                {[...Array(totalPages)].map((_, i) => (
+                    <button
+                        key={i + 1}
+                        onClick={() => handlePageChange(i + 1)}
+                        className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${
+                            currentPage === i + 1
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
+                                : 'text-gray-400 hover:bg-gray-50'
+                        }`}
+                    >
+                        {i + 1}
+                    </button>
+                ))}
 
-                {/* Pagination Section */}
-                <div className="p-8 flex items-center justify-between border-t border-gray-50">
-                    <p className="text-sm text-gray-400 font-medium">
-                        Hiển thị {currentItems.length} trên {filteredRecords.length} hồ sơ
-                    </p>
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl disabled:opacity-20"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
-                        {[...Array(totalPages)].map((_, i) => (
-                            <button
-                                key={i + 1}
-                                onClick={() => setCurrentPage(i + 1)}
-                                className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${
-                                    currentPage === i + 1
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
-                                        : 'text-gray-400 hover:bg-gray-50'
-                                }`}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl disabled:opacity-20"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
-                    </div>
-                </div>
+                <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl disabled:opacity-20 transition-all"
+                >
+                    <ChevronRight size={20} />
+                </button>
             </div>
         </div>
-    );
+      </div>
+
+      {/* MODAL CHUNG (VIEW & EDIT) */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+
+            {/* Modal Header */}
+            <div className="p-6 border-b flex justify-between items-center bg-white">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {viewMode === 'view' ? 'Chi tiết hồ sơ bệnh án' : 'Cập nhật hồ sơ bệnh án'}
+                </h2>
+                <p className="text-sm text-gray-500">Mã hồ sơ: HS-{formData.id}</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-red-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto custom-scrollbar bg-gray-50/50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                {/* Thông tin hành chính (Read Only) */}
+                <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2">
+                   <div className="flex items-center gap-3">
+                      <User className="text-blue-500" size={18}/>
+                      <div>
+                        <p className="text-[10px] uppercase text-gray-400 font-bold">Bệnh nhân</p>
+                        <p className="font-semibold text-gray-700">{formData.patientName || 'N/A'}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <Stethoscope className="text-green-500" size={18}/>
+                      <div>
+                        <p className="text-[10px] uppercase text-gray-400 font-bold">Bác sĩ phụ trách</p>
+                        <p className="font-semibold text-gray-700">{formData.doctorName || 'N/A'}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <Calendar className="text-orange-500" size={18}/>
+                      <div>
+                        <p className="text-[10px] uppercase text-gray-400 font-bold">Ngày lập hồ sơ</p>
+                        <p className="font-semibold text-gray-700">{new Date(formData.createdAt).toLocaleString('vi-VN')}</p>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Các trường từ Database */}
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Răng điều trị</label>
+                  <input
+                    name="toothDetails"
+                    value={formData.toothDetails || ''}
+                    onChange={handleChange}
+                    disabled={viewMode === 'view'}
+                    placeholder="Ví dụ: Răng số 6..."
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Dịch vụ thực hiện</label>
+                  <input
+                    name="services"
+                    value={formData.services || ''}
+                    onChange={handleChange}
+                    disabled={viewMode === 'view'}
+                    placeholder="Lấy cao răng, hàn răng..."
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Triệu chứng lâm sàng</label>
+                  <textarea
+                    name="symptoms"
+                    value={formData.symptoms || ''}
+                    onChange={handleChange}
+                    disabled={viewMode === 'view'}
+                    rows="2"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500 resize-none"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Chẩn đoán của bác sĩ</label>
+                  <textarea
+                    name="diagnosis"
+                    value={formData.diagnosis || ''}
+                    onChange={handleChange}
+                    disabled={viewMode === 'view'}
+                    rows="2"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500 resize-none"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Chỉ định / Hướng dẫn</label>
+                  <textarea
+                    name="indications"
+                    value={formData.indications || ''}
+                    onChange={handleChange}
+                    disabled={viewMode === 'view'}
+                    rows="2"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500 resize-none"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Đơn thuốc </label>
+                  <textarea
+                    name="prescription"
+                    value={formData.prescription || ''}
+                    onChange={handleChange}
+                    disabled={viewMode === 'view'}
+                    rows="3"
+                    placeholder="Tên thuốc, liều dùng..."
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Ghi chú  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes || ''}
+                    onChange={handleChange}
+                    disabled={viewMode === 'view'}
+                    rows="2"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500 resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="mt-8 pt-6 border-t flex justify-end gap-3 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-6 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                >
+                  {viewMode === 'view' ? 'Đóng' : 'Hủy bỏ'}
+                </button>
+                {viewMode === 'edit' && (
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-200 font-medium"
+                  >
+                    <Save size={20} />
+                    Lưu hồ sơ
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
-export default MedicalRecordManagement;
+export default MedicalRecord;

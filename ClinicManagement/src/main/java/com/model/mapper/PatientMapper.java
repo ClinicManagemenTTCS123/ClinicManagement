@@ -26,6 +26,7 @@ public final class PatientMapper {
         dto.setEmail(entity.getEmail());
         dto.setAddress(entity.getAddress());
         dto.setCccd(entity.getCccd());
+        dto.setAvatar(entity.getAvatar());
         dto.setInsuranceCode(entity.getInsuranceCode());
 
         return dto;
@@ -52,6 +53,7 @@ public final class PatientMapper {
         entity.setEmail(trimOrNull(dto.getEmail()));
         entity.setAddress(trimOrNull(dto.getAddress()));
         entity.setCccd(trimOrNull(dto.getCccd()));
+        entity.setAvatar(dto.getAvatar());
         entity.setInsuranceCode(trimOrNull(dto.getInsuranceCode()));
 
         return entity;
@@ -71,6 +73,7 @@ public final class PatientMapper {
         entity.setAddress(trimOrNull(dto.getAddress()));
         entity.setCccd(trimOrNull(dto.getCccd()));
         entity.setInsuranceCode(trimOrNull(dto.getInsuranceCode()));
+        if (dto.getAvatar() != null) entity.setAvatar(dto.getAvatar());
     }
 
     /**
@@ -87,6 +90,7 @@ public final class PatientMapper {
         if (dto.getAddress() != null) entity.setAddress(trimOrNull(dto.getAddress()));
         if (dto.getCccd() != null) entity.setCccd(trimOrNull(dto.getCccd()));
         if (dto.getInsuranceCode() != null) entity.setInsuranceCode(trimOrNull(dto.getInsuranceCode()));
+        if (dto.getAvatar() != null) entity.setAvatar(dto.getAvatar());
     }
 
     // =================== Helpers ===================
