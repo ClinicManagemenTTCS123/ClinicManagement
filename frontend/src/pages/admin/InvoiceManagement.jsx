@@ -42,15 +42,15 @@ const InvoiceManagement = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa hóa đơn này không?")) return;
-        try {
-            await axios.delete(`${apiUrl}/admin/invoices/${id}`);
-            fetchInvoices();
-        } catch (error) {
-            alert("Lỗi khi xóa hóa đơn!");
-        }
-    };
+//     const handleDelete = async (id) => {
+//         if (!window.confirm("Bạn có chắc chắn muốn xóa hóa đơn này không?")) return;
+//         try {
+//             await axios.delete(`${apiUrl}/admin/invoices/${id}`);
+//             fetchInvoices();
+//         } catch (error) {
+//             alert("Lỗi khi xóa hóa đơn!");
+//         }
+//     };
 
     const openViewModal = (invoice) => {
         setSelectedInvoice(invoice);
@@ -101,14 +101,20 @@ const InvoiceManagement = () => {
 
     const formatCurrency = (amount) => new Intl.NumberFormat('vi-VN').format(amount || 0) + ' ₫';
 
-    const filteredData = useMemo(() => {
-        return invoices.filter(inv => {
-            const matchSearch = (inv.patientName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                String(inv.id).includes(searchTerm);
-            const matchStatus = filterStatus === 'ALL' || inv.status === filterStatus;
-            return matchSearch && matchStatus;
-        });
-    }, [searchTerm, filterStatus, invoices]);
+   const filteredData = useMemo(() => {
+       // Bước 1: Lọc dữ liệu theo Search và Status
+       const result = invoices.filter(inv => {
+           const matchSearch = (inv.patientName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+               String(inv.id).includes(searchTerm);
+           const matchStatus = filterStatus === 'ALL' || inv.status === filterStatus;
+           return matchSearch && matchStatus;
+       });
+
+       // Bước 2: Sắp xếp theo ID giảm dần (Mã hóa đơn lớn nhất/mới nhất lên đầu)
+       // Dùng b.id - a.id để đưa ID lớn lên trên
+       return result.sort((a, b) => Number(b.id) - Number(a.id));
+
+   }, [searchTerm, filterStatus, invoices]);
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -168,10 +174,10 @@ const InvoiceManagement = () => {
                             <tr><td colSpan="6" className="text-center py-10 text-gray-400">Đang tải dữ liệu...</td></tr>
                         ) : currentItems.length > 0 ? currentItems.map((inv) => (
                             <tr key={inv.id} className="hover:bg-blue-50/30 transition-colors">
-                                <td className="py-4 px-6 font-semibold text-gray-500">#{inv.id}</td>
-                                <td className="py-4 px-6 font-bold text-gray-800">{inv.patientName}</td>
+                                <td className="py-4 px-6 text-gray-500 font-medium">{inv.id}</td>
+                                <td className="py-4 px-6 text-gray-900 font-medium">{inv.patientName}</td>
                                 <td className="py-4 px-6 text-gray-500 text-sm">{formatDate(inv.createdAt)}</td>
-                                <td className="py-4 px-6 font-bold text-slate-800">{formatCurrency(inv.total)}</td>
+                                <td className="py-4 px-6 font-bold text-slate-900">{formatCurrency(inv.total)}</td>
                                 <td className="py-4 px-6 text-center">
                                     <span className={`px-3 py-1 rounded-md text-[11px] font-bold inline-block w-[120px] ${
                                         inv.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'
@@ -194,9 +200,7 @@ const InvoiceManagement = () => {
                                             <option value="PAID">Đã thanh toán</option>
                                         </select>
 
-                                        <button onClick={() => handleDelete(inv.id)} title="Xóa" className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-all">
-                                            <Trash2 size={16} />
-                                        </button>
+
                                     </div>
                                 </td>
                             </tr>
@@ -227,7 +231,7 @@ const InvoiceManagement = () => {
                         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                                 <FileText className="text-blue-500" />
-                                Chi tiết Hóa đơn #{selectedInvoice.id}
+                                Chi tiết hóa đơn {selectedInvoice.id}
                             </h2>
                             <button onClick={() => setIsViewModalOpen(false)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
                                 <X size={20} />
@@ -242,7 +246,7 @@ const InvoiceManagement = () => {
                                 </div>
                                 <div className="flex justify-between items-center pb-3 border-b border-gray-50">
                                     <span className="text-sm text-slate-500 font-medium">Bác sĩ</span>
-                                    <span className="text-sm font-bold text-blue-600">{selectedInvoice.doctorName || 'N/A'}</span>
+                                    <span className="text-sm font-bold text-slate-800">{selectedInvoice.doctorName || 'N/A'}</span>
                                 </div>
                                 <div className="flex justify-between items-center pb-3 border-b border-gray-50">
                                     <span className="text-sm text-slate-500 font-medium">Ngày lập</span>

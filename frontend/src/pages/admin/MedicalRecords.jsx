@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Eye, Edit3, Loader2, X, Save, FileText,Calendar, User, Stethoscope, ChevronLeft, ChevronRight } from 'lucide-react';
 import medicalRecordService from '../../services/medicalRecordService';
 
@@ -74,12 +74,25 @@ const MedicalRecord = () => {
     const itemsPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Tính toán dữ liệu cho trang hiện tại
+
+    // 'records' là mảng lấy từ API
+    // Bước 1: Tạo mảng đã được sắp xếp theo ID giảm dần
+    const sortedRecords = useMemo(() => {
+      if (!records || records.length === 0) return [];
+
+      // Tạo bản sao và sắp xếp (b.id - a.id đưa mã lớn nhất/mới nhất lên đầu)
+      return [...records].sort((a, b) => Number(b.id) - Number(a.id));
+    }, [records]);
+
+    // Bước 2: Tính toán phân trang dựa trên danh sách đã sắp xếp
+    const totalPages = Math.ceil(sortedRecords.length / itemsPerPage);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    // 'records' là mảng lấy từ API
-    const currentItems = records.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(records.length / itemsPerPage);
+
+    // Bước 3: Lấy dữ liệu cho trang hiện tại
+    const currentItems = useMemo(() => {
+      return sortedRecords.slice(indexOfFirstItem, indexOfLastItem);
+    }, [sortedRecords, indexOfFirstItem, indexOfLastItem]);
 
     // Hàm chuyển trang
     const handlePageChange = (pageNumber) => {
@@ -131,9 +144,9 @@ const MedicalRecord = () => {
                 <tr><td colSpan="6" className="text-center py-10"><Loader2 className="animate-spin mx-auto text-blue-500" /></td></tr>
               ) : currentItems.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50 transition-colors border-b border-gray-50">
-                  <td className="py-4 px-4 font-medium text-blue-600">HS-{item.id}</td>
-                  <td className="py-4 px-4 font-semibold text-gray-800">{item.patientName}</td>
-                  <td className="py-4 px-4 text-gray-600">{item.doctorName}</td>
+                  <td className="py-4 px-4 font-medium text-slate-600">{item.id}</td>
+                  <td className="py-4 px-4 font-semibold text-slate-800">{item.patientName}</td>
+                  <td className="py-4 px-4 text-slate-700">{item.doctorName}</td>
                   <td className="py-4 px-4 text-gray-500">{new Date(item.createdAt).toLocaleDateString('vi-VN')}</td>
                   <td className="py-4 px-4"><span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">{item.diagnosis}</span></td>
                   <td className="py-4 px-4">
@@ -247,7 +260,7 @@ const MedicalRecord = () => {
                     value={formData.toothDetails || ''}
                     onChange={handleChange}
                     disabled={viewMode === 'view'}
-                    placeholder="Ví dụ: Răng số 6..."
+                    placeholder=""
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   />
                 </div>
@@ -259,7 +272,7 @@ const MedicalRecord = () => {
                     value={formData.services || ''}
                     onChange={handleChange}
                     disabled={viewMode === 'view'}
-                    placeholder="Lấy cao răng, hàn răng..."
+                    placeholder=""
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   />
                 </div>
@@ -308,7 +321,7 @@ const MedicalRecord = () => {
                     onChange={handleChange}
                     disabled={viewMode === 'view'}
                     rows="3"
-                    placeholder="Tên thuốc, liều dùng..."
+                    placeholder=""
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   />
                 </div>
