@@ -35,9 +35,14 @@ const PatientManagement = () => {
         setLoading(true);
         try {
             const res = await patientService.getPatients();
-            // Xử lý nếu backend trả về Page object hoặc List trực tiếp
             const data = res.data?.content || res.data || [];
-            setPatients(Array.isArray(data) ? data : []);
+
+            // SẮP XẾP TẠI ĐÂY: b.id - a.id (Giảm dần - Mới nhất lên đầu)
+            const sortedData = Array.isArray(data)
+                ? [...data].sort((a, b) => b.id - a.id)
+                : [];
+
+            setPatients(sortedData);
         } catch (err) {
             console.error("Lỗi lấy dữ liệu:", err);
             setPatients([]);
@@ -99,6 +104,7 @@ const PatientManagement = () => {
             // Trả về kết quả kết hợp 3 điều kiện
             return matchSearch && matchGender && matchDate;
         });
+    return result.sort((a, b) => b.id - a.id);
     }, [patients, searchTerm, filterGender, filterDate]); // Bỏ filterDept khỏi dependency
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
