@@ -220,11 +220,15 @@ const PatientManagement = () => {
                         ) : currentItems.map((p) => (
                             <tr key={p.id} className="hover:bg-gray-50/80 transition-colors">
                                 <td className="py-5 px-6 font-semibold text-gray-400">{p.id}</td>
-                                <td className="py-5 px-6 font-normal text-gray-900">{p.fullName || p.name}</td>
+                                <td className="py-4 px-6 text-gray-900 font-medium">{p.fullName || p.name}</td>
                                 <td className="py-5 px-6">
                                     {p.gender === 'MALE' ? 'Nam' : p.gender === 'FEMALE' ? 'Nữ' : p.gender}
                                 </td>
-                                <td className="py-5 px-6">{p.dateOfBirth || p.dob}</td>
+                                <td className="py-5 px-6">
+                                  {p.dateOfBirth || p.dob
+                                    ? new Date(p.dateOfBirth || p.dob).toLocaleDateString('vi-VN')
+                                    : '---'}
+                                </td>
                                 <td className="py-5 px-6">{p.phone}</td>
                                 {/* ============================================================
                                     TABLE BODY: Thêm nút Xem (Eye), Sửa (Edit) và Xóa (Trash)

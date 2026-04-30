@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, X, ChevronDown, ChevronLeft, ChevronRight, Building2 } from 'lucide-react';
 import { doctorService } from '../../services/doctorService';
 import api from '../../services/api'; // Nếu file api.js export default axios instance
@@ -158,9 +158,24 @@ const handleSubmit = async (e) => {
     };
 
     // Phân trang bằng mảng doctors
-    const totalPages = Math.ceil(doctors.length / itemsPerPage) || 1;
-    const currentItems = doctors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    // 1. Tạo mảng đã được sắp xếp
+    const sortedDoctors = useMemo(() => {
+        // Tạo bản sao mảng bằng [...doctors] để không làm thay đổi state gốc
+        return [...doctors].sort((a, b) => {
+            // Sắp xếp ID tăng dần (1, 2, 3...)
+            return Number(a.id) - Number(b.id);
 
+            // Nếu muốn mới nhất lên đầu (23, 22, 21...) thì dùng:
+            // return Number(b.id) - Number(a.id);
+        });
+    }, [doctors]);
+
+    // 2. Tính toán phân trang dựa trên mảng đã sắp xếp
+    const totalPages = Math.ceil(sortedDoctors.length / itemsPerPage) || 1;
+    const currentItems = sortedDoctors.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) setCurrentPage(page);
     };
@@ -221,6 +236,7 @@ const handleSubmit = async (e) => {
                     <table className="w-full text-left">
                         <thead>
                         <tr className="text-gray-400 text-[14px] border-b border-gray-50">
+                            <th className="py-4 px-6 font-medium uppercase tracking-wider">Mã BS</th>
                             <th className="py-4 px-6 font-medium uppercase tracking-wider">Họ tên</th>
                             <th className="py-4 px-6 font-medium uppercase tracking-wider">Email</th>
                             <th className="py-4 px-6 font-medium uppercase tracking-wider">Số điện thoại</th>
@@ -236,7 +252,8 @@ const handleSubmit = async (e) => {
                         ) : (
                             currentItems.map((doc) => (
                                 <tr key={doc.id} className="hover:bg-gray-50/80 transition-colors">
-                                    <td className="py-5 px-6 font-normal text-gray-900">{doc.fullName}</td>
+                                    <td className="py-4 px-6 text-gray-600 font-semibold">{doc.doctorId || doc.id}</td>
+                                    <td className="py-4 px-6 text-gray-900 font-medium">{doc.fullName}</td>
                                     <td className="py-5 px-6 text-gray-500">{doc.email}</td>
                                     <td className="py-5 px-6 text-gray-500">{doc.phone}</td>
                                     <td className="py-5 px-6">

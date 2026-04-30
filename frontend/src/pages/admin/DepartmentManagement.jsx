@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 
@@ -117,8 +117,20 @@ const DepartmentManagement = () => {
         }
     };
 
-    const totalPages = Math.ceil(departments.length / itemsPerPage);
-    const currentItems = departments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    // 2. Tạo danh sách đã được sắp xếp theo ID tăng dần
+    const sortedDepartments = useMemo(() => {
+        if (!departments) return [];
+
+        // Tạo bản sao và sắp xếp: a.id - b.id (Tăng dần)
+        return [...departments].sort((a, b) => Number(a.id) - Number(b.id));
+    }, [departments]);
+
+    // 3. Tính toán phân trang dựa trên danh sách đã sắp xếp (sortedDepartments)
+    const totalPages = Math.ceil(sortedDepartments.length / itemsPerPage);
+    const currentItems = sortedDepartments.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     return (
         <div className="p-2 bg-gray-50 min-h-screen font-sans text-[#475467] relative">
@@ -166,6 +178,7 @@ const DepartmentManagement = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="text-[#8A92A6] text-[13px] border-b border-gray-100">
+                                <th className="py-4 px-6 font-semibold uppercase tracking-wider w-[15%]">Mã khoa</th>
                                 <th className="py-4 px-6 font-semibold uppercase tracking-wider w-[40%]">Tên khoa</th>
                                 <th className="py-4 px-6 font-semibold uppercase tracking-wider w-[30%]">Phí cơ bản</th>
                                 <th className="py-4 px-6 text-center font-semibold uppercase tracking-wider w-[30%]">Thao tác</th>
@@ -174,6 +187,9 @@ const DepartmentManagement = () => {
                         <tbody className="divide-y divide-gray-50">
                             {!loading && currentItems.map((dept) => (
                                 <tr key={dept.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="py-5 px-6 text-[14px] font-bold text-gray-600">
+                                                        {dept.departmentCode || dept.id}
+                                                    </td>
                                     <td className="py-5 px-6 text-[15px] font-medium text-[#101828]">{dept.name}</td>
                                     <td className="py-5 px-6">
                                         <span className="bg-[#EEF4FF] text-[#3538CD] text-[12px] font-medium px-4 py-1.5 rounded-full">
