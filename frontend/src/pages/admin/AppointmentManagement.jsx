@@ -320,8 +320,8 @@ const AppointmentManagement = () => {
                                 return (
                                     <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
                                         <td className="py-4 px-6 font-semibold text-gray-500">{item.id}</td>
-                                        <td className="py-4 px-6 font-bold text-gray-800">{item.patientName || item.patient?.fullName}</td>
-                                        <td className="py-4 px-6 text-gray-600">{item.doctorName || item.doctor?.fullName || 'Chưa xếp'}</td>
+                                        <td className="py-4 px-6 text-gray-900 font-medium">{item.patientName || item.patient?.fullName}</td>
+                                        <td className="py-4 px-4 text-slate-700">{item.doctorName || item.doctor?.fullName || 'Chưa xếp'}</td>
                                         <td className="py-4 px-6">
                                             <div className="font-medium text-gray-700">{item.appointment_date}</div>
                                             <div className="text-gray-400 text-xs">{item.startTime ? item.startTime.split('T')[1].substring(0,5) : ''}</div>
