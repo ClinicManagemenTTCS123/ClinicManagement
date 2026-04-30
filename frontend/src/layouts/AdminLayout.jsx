@@ -20,7 +20,7 @@ const AdminLayout = () => {
                     </div>
 
                     <div className="flex items-center gap-6 text-gray-500">
-                        <Bell size={20} className="cursor-pointer hover:text-blue-500" />
+
                         <div className="flex items-center gap-2 cursor-pointer">
                             <UserCircle size={24} />
                             <span className="font-medium text-gray-800">Admin</span>

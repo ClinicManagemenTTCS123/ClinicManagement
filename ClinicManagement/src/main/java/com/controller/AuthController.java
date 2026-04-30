@@ -21,27 +21,33 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            User user = userService.login(request.getEmail(), request.getPassword());
-            Integer doctorId = null;
+            // 1. Lấy user từ DB bằng username
+            User user = userService.login(request.getUsername(), request.getPassword());
 
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Sai tài khoản hoặc mật khẩu");
+            }
+
+            Integer doctorId = null;
+            // 2. Nếu là DOCTOR, tìm ID bác sĩ tương ứng (giả định username bên bảng Doctor cũng giống bảng User)
             if (user.getRole() == UserRole.DOCTOR) {
                 EntityManager em = EntityManagerProvider.em();
                 try {
-                    doctorId = em.createQuery("SELECT d.id FROM Doctor d WHERE d.email = :email", Integer.class)
-                            .setParameter("email", user.getUsername())
+                    // Bạn có thể tìm bác sĩ theo username hoặc email tùy thiết kế bảng Doctor
+                    doctorId = em.createQuery("SELECT d.id FROM Doctor d WHERE d.username = :uname", Integer.class)
+                            .setParameter("uname", user.getUsername())
                             .getSingleResult();
-
                 } catch (Exception e) {
-                    System.out.println("Lỗi khi tìm Bác sĩ: " + e.getMessage());
-                    e.printStackTrace();
-                } finally {
-                    em.close();
-                }
+                    System.out.println("Chưa có thông tin bác sĩ chi tiết");
+                } finally { em.close(); }
             }
-            AuthResponse response = new AuthResponse("Đăng nhập thành công!", user.getRole().name(), doctorId);
+
+            // 3. Trả về thông tin role để Frontend điều hướng
+            AuthResponse response = new AuthResponse("Thành công", user.getRole().name(), doctorId);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi hệ thống: " + e.getMessage());
         }
     }
 

@@ -38,8 +38,15 @@ public final class DepartmentMapper {
                     .sorted()
                     .collect(Collectors.toList());
             dto.setDoctorNames(doctorNames);
+            List<String> doctorPhones = entity.getDoctors().stream()
+                    .filter(Objects::nonNull)
+                    .map(Doctor::getPhone) // Lấy phone từ Entity Doctor
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            dto.setDoctorPhones(doctorPhones);
         } else {
             dto.setDoctorNames(Collections.emptyList());
+            dto.setDoctorPhones(Collections.emptyList());
         }
 
         return dto;

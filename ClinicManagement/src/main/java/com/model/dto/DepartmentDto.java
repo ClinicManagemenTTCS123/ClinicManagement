@@ -51,5 +51,9 @@ public class DepartmentDto {
 
     private List<String> doctorNames;
 
+    private List<String> doctorPhones;
+    public List<String> getDoctorPhones() { return doctorPhones; }
+    public void setDoctorPhones(List<String> doctorPhones) { this.doctorPhones = doctorPhones; }
+
 
 }

@@ -35,6 +35,8 @@ public class DoctorController {
     private final MedicalRecordRepository medicalRecordRepo = new MedicalRecordRepository();
     private final MedicalRecordMapper medicalRecordMapper = new MedicalRecordMapper();
     private final DoctorRepository doctorRepo = new DoctorRepository();
+
+    // Dashboard của bác sĩ
     @GetMapping("/{doctorId}/dashboard")
     public ResponseEntity<?> getDashboardStats(@PathVariable Integer doctorId) {
         EntityManager em = EntityManagerProvider.em();
@@ -71,6 +73,7 @@ public class DoctorController {
         }
     }
 
+    // Lịch hẹn của bác sĩ: xem, tìm kiếm, lọc
     @GetMapping("/{doctorId}/appointments")
     public ResponseEntity<?> getAppointments(
             @PathVariable Integer doctorId,
@@ -97,6 +100,7 @@ public class DoctorController {
         }
     }
 
+    // Bệnh nhân của bác sĩ: tìm kiếm, xem
     @GetMapping("/{doctorId}/patients")
     public ResponseEntity<?> getPatientsByDoctor(
             @PathVariable Integer doctorId,
@@ -124,6 +128,7 @@ public class DoctorController {
         }
     }
 
+    // Hồ sơ bệnh án của bác sĩ: tìm kiếm, xem
     @GetMapping("/{doctorId}/medical-records")
     public ResponseEntity<?> getMedicalRecords(
             @PathVariable Integer doctorId,
@@ -148,6 +153,8 @@ public class DoctorController {
             em.close();
         }
     }
+
+    // Hồ sơ cá nhân bác sĩ: xem
     @GetMapping("/{id}")
     public ResponseEntity<?> getDoctorProfile(@PathVariable Integer id) {
         EntityManager em = EntityManagerProvider.em();
@@ -163,6 +170,8 @@ public class DoctorController {
             em.close();
         }
     }
+
+    // Hồ sơ cá nhân bác sĩ: sửa, lưu
     @PutMapping("/{id}")
     public ResponseEntity<?> updateDoctorProfile(@PathVariable Integer id, @RequestBody DoctorDto dto) {
         EntityManager em = EntityManagerProvider.em();
@@ -171,6 +180,7 @@ public class DoctorController {
 
             Doctor existingDoctor = doctorRepo.findById(em, id);
             if (existingDoctor == null) {
+                if (em.getTransaction().isActive()) em.getTransaction().rollback();
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy thông tin bác sĩ");
             }
             System.out.println(">>> Tên bác sĩ React gửi lên: " + dto.getFullName());
@@ -178,6 +188,13 @@ public class DoctorController {
 
             if(dto.getFullName() != null) existingDoctor.setFullName(dto.getFullName());
             if(dto.getPhone() != null) existingDoctor.setPhone(dto.getPhone());
+            if(dto.getEmail() != null) existingDoctor.setEmail(dto.getEmail());
+            if(dto.getAddress() != null) existingDoctor.setAddress(dto.getAddress());
+            if(dto.getGender() != null) existingDoctor.setGender(dto.getGender());
+            if(dto.getDateOfBirth() != null) existingDoctor.setDateOfBirth(dto.getDateOfBirth());
+            if(dto.getConsultationFee() != null) existingDoctor.setConsultationFee(dto.getConsultationFee());
+            if(dto.getNotes() != null) existingDoctor.setNotes(dto.getNotes());
+            if(dto.getDoctorStatus() != null) existingDoctor.setStatus(dto.getDoctorStatus());
 
             em.merge(existingDoctor);
             em.flush();
