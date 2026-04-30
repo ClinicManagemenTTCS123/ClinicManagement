@@ -72,10 +72,26 @@ const AppointmentManagement = () => {
             const res = await axios.get(`${apiUrl}/admin/appointments`, {
                 params: { search: searchTerm, status: filterStatus }
             });
-            setAppointments(res.data);
+
+            // Kiểm tra nếu res.data tồn tại, nếu không thì gán mảng rỗng
+            const rawData = res.data || [];
+
+            // Sắp xếp: ID lớn nhất (mới nhất) lên đầu
+            const sortedData = [...rawData].sort((a, b) => {
+                // Cách 1: Sắp xếp theo ID (Độ chính xác cao cho bản ghi mới tạo)
+                return b.id - a.id;
+
+                // Cách 2: Nếu muốn sắp xếp theo thời gian khám (startTime)
+                // return new Date(b.startTime) - new Date(a.startTime);
+            });
+
+            console.log("Dữ liệu đã sắp xếp:", sortedData);
+
+            setAppointments(sortedData);
             setCurrentPage(1);
         } catch (error) {
             console.error("Lỗi lấy lịch hẹn:", error);
+            setAppointments([]); // Reset để tránh lỗi map
         } finally {
             setIsLoading(false);
         }
@@ -216,8 +232,33 @@ const AppointmentManagement = () => {
     };
 
     const totalPages = Math.ceil(appointments.length / itemsPerPage);
-    const currentItems = appointments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const currentItems = useMemo(() => {
+      if (!appointments || appointments.length === 0) return [];
 
+      // Tạo bản sao để không làm ảnh hưởng state gốc
+      const sorted = [...appointments].sort((a, b) => {
+          // CÁCH 1: Sắp xếp theo ID (Chắc chắn nhất vì ID 23 > ID 1)
+          // Chúng ta ép kiểu Number để tránh lỗi so sánh chuỗi
+          return Number(b.id) - Number(a.id);
+
+          /*
+          // CÁCH 2: Nếu bạn vẫn muốn ưu tiên thời gian rồi mới đến ID:
+          const dateA = new Date(a.startTime || a.appointment_date).getTime();
+          const dateB = new Date(b.startTime || b.appointment_date).getTime();
+
+          if (dateA !== dateB) {
+              return dateB - dateA;
+          }
+          return b.id - a.id;
+          */
+      });
+
+      // Cắt mảng để phân trang
+      const indexOfLastItem = currentPage * itemsPerPage;
+      const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+      return sorted.slice(indexOfFirstItem, indexOfLastItem);
+
+  }, [appointments, currentPage, itemsPerPage]); // Thêm itemsPerPage vào dependency cho chắc chắn
     return (
         <div className="p-2 bg-gray-50 min-h-screen font-sans text-[#475467] relative">
             <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
@@ -278,7 +319,7 @@ const AppointmentManagement = () => {
                                 const statusObj = getStatusStyle(item.status);
                                 return (
                                     <tr key={item.id} className="hover:bg-blue-50/30 transition-colors">
-                                        <td className="py-4 px-6 font-semibold text-gray-500">#{item.id}</td>
+                                        <td className="py-4 px-6 font-semibold text-gray-500">{item.id}</td>
                                         <td className="py-4 px-6 font-bold text-gray-800">{item.patientName || item.patient?.fullName}</td>
                                         <td className="py-4 px-6 text-gray-600">{item.doctorName || item.doctor?.fullName || 'Chưa xếp'}</td>
                                         <td className="py-4 px-6">
@@ -329,7 +370,7 @@ const AppointmentManagement = () => {
 
                         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-gray-800">
-                                {modalConfig.type === 'ADD' ? 'Tạo lịch hẹn mới' : modalConfig.type === 'EDIT' ? `Cập nhật lịch hẹn #${selectedApt?.id}` : `Chi tiết lịch hẹn #${selectedApt?.id}`}
+                                {modalConfig.type === 'ADD' ? 'Tạo lịch hẹn mới' : modalConfig.type === 'EDIT' ? `Cập nhật lịch hẹn ${selectedApt?.id}` : `Chi tiết lịch hẹn ${selectedApt?.id}`}
                             </h2>
                             <button onClick={() => setModalConfig({isOpen: false})} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full"><X size={20} /></button>
                         </div>
@@ -617,7 +658,23 @@ const AppointmentManagement = () => {
                                             <>
                                                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                                                     <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Thời gian khám</p>
-                                                    <p className="font-bold text-gray-800 mt-1.5">{selectedApt?.appointment_date} lúc {selectedApt?.startTime?.split('T')[1]?.substring(0,5)}</p>
+                                                    <p className="font-bold text-gray-800 mt-1.5">
+                                                        {selectedApt?.startTime ? (
+                                                            (() => {
+                                                                // 1. Chuẩn hóa chuỗi bằng cách thay 'T' thành khoảng trắng và tách mảng
+                                                                const parts = selectedApt.startTime.replace('T', ' ').split(' ');
+                                                                const datePart = parts[0]; // "2026-05-01"
+                                                                const timePart = parts[1]?.substring(0, 5); // "08:00"
+
+                                                                // 2. Đảo ngược chuỗi ngày từ YYYY-MM-DD sang DD/MM/YYYY
+                                                                const formattedDate = datePart.split('-').reverse().join('/');
+
+                                                                return `${formattedDate} - ${timePart}`;
+                                                            })()
+                                                        ) : (
+                                                            "Chưa có dữ liệu"
+                                                        )}
+                                                    </p>
                                                 </div>
                                                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
                                                     <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Trạng thái</p>
