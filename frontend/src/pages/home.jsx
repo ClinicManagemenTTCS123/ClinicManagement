@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight, Calendar, Users, FileText,
@@ -9,6 +11,7 @@ import { Plus } from 'lucide-react';
 import { Link } from "react-router-dom";
 
 const Home = () => {
+    const navigate = useNavigate();
     // Dữ liệu Tính năng
     const features = [
         {
@@ -109,15 +112,13 @@ const Home = () => {
                         </p>
 
                         <Button
+                        onClick={() => navigate("/login")}
                             className="bg-gradient-to-r from-[#3197D4] to-[#6ECFF6] hover:opacity-90 text-white font-bold h-16 px-10 text-lg rounded-xl shadow-[0_4px_14px_0_rgba(63,162,215,0.4)] border-none flex items-center gap-3 transition-all group active:scale-95"
                         >
-                            Dùng thử miễn phí
+                            Bắt đầu sử dụng
                             <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                         </Button>
-                        <div className="flex gap-10 text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
-                            <div className="flex items-center gap-2"><Check className="w-4 h-4 text-[#3fa2d7]" /> KHÔNG CẦN THẺ TÍN DỤNG</div>
-                            <div className="flex items-center gap-2"><Check className="w-4 h-4 text-[#3fa2d7]" /> 14 NGÀY DÙNG THỬ</div>
-                        </div>
+
                     </div>
 
                     {/* Ảnh Mockup */}
@@ -165,7 +166,7 @@ const Home = () => {
                             <h3 className="text-[#3fa2d7] font-black text-sm tracking-[0.3em] uppercase opacity-80">
                                 Quy trình
                             </h3>
-                            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
+                            <h2 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight">
                                 Bắt đầu chỉ với 3 bước
                             </h2>
                         </div>
@@ -215,8 +216,8 @@ const Home = () => {
 
                         <div className="grid md:grid-cols-3 gap-8">
                             {[
-                                { name: "BS. Nguyễn Thu Hương ", role: "Đa khoa", text: "PITI Clinic đã thay đổi hoàn toàn cách chúng tôi vận hành. Thời gian thủ tục giảm 60% và bệnh nhân rất hài lòng." },
-                                { name: "BS. Trần Minh Nguyệt", role: "Chuyên khoa Nhi", text: "Hệ thống trực quan nhất mà tôi từng sử dụng. Việc nhắc lịch tự động giúp giảm tỷ lệ bỏ hẹn đáng kể." },
+                                { name: "BS. Nguyễn Thu Hương ", role: "Phòng khám Nha khoa", text: "PITI Clinic đã thay đổi hoàn toàn cách chúng tôi vận hành. Thời gian thủ tục giảm 60%. " },
+                                { name: "BS. Trần Minh Nguyệt", role: "Phòng khám Nha khoa", text: "Hệ thống trực quan nhất mà tôi từng sử dụng. Việc nhắc lịch tự động giúp giảm tỷ lệ bỏ hẹn đáng kể." },
                                 { name: "BS. Lê Phan Anh", role: "Phòng khám Nha khoa", text: "Dữ liệu báo cáo cực kỳ chi tiết giúp tôi nắm bắt tình hình kinh doanh chỉ trong vài giây." }
                             ].map((review, i) => (
                                 <div key={i} className="bg-white p-10 rounded-[3rem] border border-blue-50 shadow-sm hover:shadow-xl transition-all duration-300">
@@ -244,17 +245,18 @@ const Home = () => {
                     <div className="bg-gradient-to-br from-[#3fa2d7] to-[#0369a1] rounded-[4rem] p-16 md:p-28 text-center text-white relative overflow-hidden shadow-2xl">
                         <div className="relative z-10 space-y-10">
                             <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
-                                Sẵn sàng hiện đại hóa phòng khám?
+                                Sẵn sàng chuyển đổi số cho phòng khám của bạn?
                             </h2>
-                            <p className="text-blue-50 text-xl md:text-2xl max-w-3xl mx-auto font-medium opacity-90">
-                                Hãy trải nghiệm sự khác biệt ngay hôm nay. Miễn phí hoàn toàn trong 14 ngày đầu tiên.
-                            </p>
+
                             <div className="flex flex-col sm:flex-row justify-center gap-6 pt-6">
-                                <Button size="lg" className="bg-white text-[#3fa2d7] hover:bg-blue-50 font-black h-20 px-12 rounded-2xl text-xl transition-all active:scale-95">
+                                <Button size="lg"
+                                onClick={() => navigate("/register")}
+                                className="bg-white text-[#3fa2d7] hover:bg-blue-50 font-black h-20 px-12 rounded-2xl text-xl transition-all active:scale-95">
+
                                     Bắt đầu ngay miễn phí
                                 </Button>
                                 <Button size="lg" variant="outline" className="border-white/40 bg-white/10 text-white hover:bg-white/20 font-black h-20 px-12 rounded-2xl text-xl">
-                                    Liên hệ tư vấn
+                                    Tìm hiểu thêm
                                 </Button>
                             </div>
                         </div>
@@ -270,7 +272,7 @@ const Home = () => {
                             <div className="w-8 h-8 bg-[#3fa2d7] rounded-lg flex items-center justify-center text-white font-black">P</div>
                             <span className="text-xl font-black">PITI Clinic</span>
                         </div>
-                        <p className="text-slate-500 font-medium">Nền tảng quản lý phòng khám thế hệ mới.</p>
+                        <p className="text-slate-500 font-medium">Nền tảng quản lý phòng khám.</p>
                     </div>
                     <div className="space-y-4">
                         <h4 className="font-black uppercase tracking-widest text-sm">Sản phẩm</h4>
