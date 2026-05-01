@@ -90,9 +90,9 @@ const PatientDashboard = () => {
         <div className="space-y-8 max-w-6xl">
             <div>
                 <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    Chào buổi sáng, {data.patientName?.split(' ').pop()}! 👋
+                   Tổng quan hôm nay
                 </h1>
-                <p className="text-slate-500 mt-1">Đây là tổng quan sức khỏe của bạn hôm nay.</p>
+
             </div>
 
             {/* Chỉnh lại grid-cols-3 vì dữ liệu bạn đang có 3 khối */}
@@ -128,7 +128,7 @@ const PatientDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-slate-800">Lịch hẹn sắp tới</h2>
+                        <h2 className="text-lg font-bold text-slate-800">Lịch hẹn của tôi</h2>
                         <Link to="/patient/my-appointments" className="text-sm font-semibold text-blue-600 flex items-center hover:text-blue-700 transition-colors">
                             {/* Đã sửa size="{16}" thành size={16} */}
                             Xem tất cả <ChevronRight size={16} className="ml-1"/>

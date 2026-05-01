@@ -124,7 +124,7 @@ export default function PatientBilling() {
                     <div key={invoice.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-300">
                         <div className="p-5 flex justify-between items-start border-b border-gray-50">
                             <div>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Mã Hóa Đơn: #{invoice.id}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Mã Hóa Đơn: {invoice.id}</p>
                                 <h3 className="text-base font-bold text-slate-800">{invoice.details}</h3>
                             </div>
                             <CustomBadge status="{invoice.status}"/>
@@ -155,42 +155,52 @@ export default function PatientBilling() {
                 ))}
             </div>
 
+{/* Pagination Section */}
+            {totalPages > 0 && (
+                <div className="mt-8 px-8 py-5 border rounded-2xl flex items-center justify-between bg-white shadow-sm border-gray-100">
+                    <div className="text-sm text-gray-500 font-medium">
+                        {/* FIX: Đổi từ records.length thành filteredInvoices.length hoặc invoices.length */}
+                        Hiển thị <span className="text-blue-600">{currentItems.length}</span> trên tổng số <span className="text-gray-700">{filteredInvoices.length}</span> mục
+                    </div>
 
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8 pb-10">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className={`p-2 rounded-lg border transition-colors ${
-                            currentPage === 1 ? "text-slate-300 border-gray-100" : "text-slate-600 border-gray-200 hover:bg-white hover:border-sky-500"
-                        }`}
-                    >
-                        <ChevronLeft size="{20}"/>
-                    </button>
-
-                    {[...Array(totalPages)].map((_, index) => (
+                    <div className="flex items-center gap-2">
                         <button
-                            key={index + 1}
-                            onClick={() => setCurrentPage(index + 1)}
-                            className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
-                                currentPage === index + 1
-                                    ? "bg-sky-500 text-white shadow-md shadow-sky-100"
-                                    : "text-slate-500 border border-transparent hover:border-gray-200 hover:bg-white"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className={`p-2 rounded-lg border transition-all ${
+                                currentPage === 1 ? "text-gray-300 border-gray-100 cursor-not-allowed" : "text-gray-600 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
                             }`}
                         >
-                            {index + 1}
+                            <ChevronLeft size={20} />
                         </button>
-                    ))}
 
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className={`p-2 rounded-lg border transition-colors ${
-                            currentPage === totalPages ? "text-slate-300 border-gray-100" : "text-slate-600 border-gray-200 hover:bg-white hover:border-sky-500"
-                        }`}
-                    >
-                        <ChevronRight size="{20}"/>
-                    </button>
+                        <div className="flex items-center gap-1">
+                            {[...Array(totalPages)].map((_, index) => {
+                                const pageNumber = index + 1;
+                                return (
+                                    <button
+                                        key={pageNumber}
+                                        onClick={() => setCurrentPage(pageNumber)}
+                                        className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                                            currentPage === pageNumber ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-gray-500 border border-transparent hover:border-gray-200 hover:bg-gray-50"
+                                        }`}
+                                    >
+                                        {pageNumber}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className={`p-2 rounded-lg border transition-all ${
+                                (currentPage === totalPages || totalPages === 0) ? "text-gray-300 border-gray-100 cursor-not-allowed" : "text-gray-600 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                            }`}
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

@@ -67,7 +67,7 @@ const DoctorDashboard = () => {
                 <StatCard
                     title="Lịch hẹn hôm nay"
                     value={dashboardData.appointmentsToday}
-                    subValue="Đang cập nhật"
+                    subValue="Lịch hẹn"
                     icon={<Calendar />}
                     iconBg="bg-blue-50"
                 />

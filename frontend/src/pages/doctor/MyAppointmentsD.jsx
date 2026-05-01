@@ -29,6 +29,18 @@ const getTodayString = () => {
     return `${year}-${month}-${day}`;
 };
 
+const formatFullDateVN = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
+};
+
 const MyAppointmentsD = () => {
     const [appointments, setAppointments] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -297,7 +309,19 @@ const MyAppointmentsD = () => {
                                     <tr key={apt.id} className="hover:bg-blue-50/30 transition-colors group">
                                         <td className="px-8 py-5 font-bold text-gray-700">{apt.patientName || 'Chưa rõ'}</td>
                                         <td className="px-8 py-5 text-gray-600 text-sm font-medium">
-                                            <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-gray-400"/> {apt.appointment_date || 'N/A'}</div>
+                                            <div className="flex items-center gap-1.5">
+                                                <CalendarIcon size={14} className="text-gray-400"/>
+                                                {apt.startTime ?
+                                                    new Date(apt.startTime).toLocaleString('vi-VN', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric'
+                                                    })
+                                                    : 'N/A'
+                                                }
+                                            </div>
                                         </td>
                                         <td className="px-8 py-5 text-gray-600 text-sm font-medium">{timeString}</td>
                                         <td className="px-8 py-5 text-gray-600 text-sm truncate max-w-[200px]" title={apt.reason}>{apt.reason || 'Khám bệnh'}</td>
@@ -376,8 +400,8 @@ const MyAppointmentsD = () => {
                                 <div className="flex-1">
                                     <h3 className="text-lg font-bold text-slate-800">{selectedApt.patientName}</h3>
                                     <div className="flex gap-6 mt-1 text-sm text-slate-500">
-                                        <p><span className="font-medium text-slate-400">Mã LH:</span> #{selectedApt.id}</p>
-                                        <p><span className="font-medium text-slate-400">Ngày khám:</span> {selectedApt.appointment_date}</p>
+                                        <p><span className="font-medium text-slate-400">Mã LH:</span> {selectedApt.id}</p>
+                                        <span className="font-medium text-slate-400">Ngày khám:</span> {formatFullDateVN(selectedApt.startTime)}
                                     </div>
                                     <p className="mt-3 text-sm text-amber-600 bg-amber-50 inline-block px-3 py-1 rounded-lg font-medium border border-amber-100">
                                         Lý do: {selectedApt.reason || 'Bệnh nhân không ghi chú lý do'}
@@ -397,7 +421,7 @@ const MyAppointmentsD = () => {
                                     ></textarea>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Vị trí Răng (Mã răng)</label>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Vị trí răng (Mã răng)</label>
                                     <input
                                         type="text"
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:bg-white transition-colors"
@@ -487,8 +511,8 @@ const MyAppointmentsD = () => {
                                 <div className="flex-1">
                                     <h3 className="text-lg font-bold text-slate-800">{selectedApt.patientName}</h3>
                                     <div className="flex gap-6 mt-1 text-sm text-slate-500">
-                                        <p><span className="font-medium text-slate-400">Mã LH:</span> #{selectedApt.id}</p>
-                                        <p><span className="font-medium text-slate-400">Ngày khám:</span> {selectedApt.appointment_date}</p>
+                                        <p><span className="font-medium text-slate-400">Mã LH:</span> {selectedApt.id}</p>
+                                        <span className="font-medium text-slate-400">Ngày khám:</span> {formatFullDateVN(selectedApt.startTime)}
                                     </div>
                                 </div>
                             </div>

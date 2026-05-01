@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
+
 const MedicalRecordD = () => {
     const [records, setRecords] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,10 @@ const MedicalRecordD = () => {
         notes: ''
     });
 
+
+    // Mặc định sắp xếp theo 'id' (Mã HS) giảm dần
+    const [sortField, setSortField] = useState("id");
+    const [sortOrder, setSortOrder] = useState("desc");
     const fetchRecords = async () => {
         setIsLoading(true);
         try {
@@ -40,6 +45,8 @@ const MedicalRecordD = () => {
                     search: searchTerm,
                     startDate: startDate || null,
                     endDate: endDate || null,
+                    sortBy: 'id',       // Cố định ID
+                    direction: 'desc',   // Cố định Giảm dần
                     _t: new Date().getTime()
                 }
             });
@@ -54,16 +61,21 @@ const MedicalRecordD = () => {
     };
 
     useEffect(() => {
-        const delayDebounceFn = setTimeout(() => { fetchRecords(); }, 500);
+        const delayDebounceFn = setTimeout(() => {
+            fetchRecords();
+        }, 500);
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, startDate, endDate]);
-
     // ==========================================
     // 4. LOGIC PHÂN TRANG
     // ==========================================
     const totalItems = records.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-    const currentItems = records.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Đảm bảo dữ liệu luôn được xếp ID giảm dần trước khi cắt mảng để hiển thị
+    const currentItems = [...records]
+        .sort((a, b) => b.id - a.id) // Luôn ưu tiên ID lớn nhất lên đầu
+        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const paginate = (pageNumber) => {
         if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
@@ -171,7 +183,7 @@ const MedicalRecordD = () => {
 
                                 return (
                                     <tr key={record.id} className="hover:bg-blue-50/30 transition-colors group">
-                                        <td className="px-8 py-5 font-bold text-gray-500">#{record.id}</td>
+                                        <td className="px-8 py-5 font-bold text-gray-500">{record.id}</td>
                                         <td className="px-8 py-5 font-bold text-gray-700">{record.patientName}</td>
                                         <td className="px-8 py-5 text-gray-600 text-sm font-medium">
                                             <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-gray-400"/> {dateString}</div>
@@ -251,7 +263,7 @@ const MedicalRecordD = () => {
                                 <div className="flex-1">
                                     <h3 className="text-lg font-bold text-slate-800">{selectedRecord.patientName}</h3>
                                     <div className="flex gap-6 mt-1 text-sm text-slate-500">
-                                        <p><span className="font-medium text-slate-400">Mã HS:</span> #{selectedRecord.id}</p>
+                                        <p><span className="font-medium text-slate-400">Mã HS:</span> {selectedRecord.id}</p>
                                         <p><span className="font-medium text-slate-400">Ngày lập:</span> {new Date(selectedRecord.createdAt).toLocaleDateString('vi-VN')}</p>
                                     </div>
                                 </div>
