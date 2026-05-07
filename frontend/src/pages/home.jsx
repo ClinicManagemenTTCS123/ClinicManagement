@@ -4,45 +4,45 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
     ArrowRight, Calendar, Users, FileText,
-    BarChart3, ShieldCheck, Bell, Check, Star
+    BarChart3, ShieldCheck, Bell, Check, Star,
+    Plus, UserCog, Banknote, Activity
 } from "lucide-react";
 import clinic from "../assets/clinic.png";
-import { Plus } from 'lucide-react';
+
 import { Link } from "react-router-dom";
 
 const Home = () => {
     const navigate = useNavigate();
-    // Dữ liệu Tính năng
     const features = [
         {
-            title: "Lịch hẹn thông minh",
-            desc: "Quản lý và sắp xếp lịch khám dễ dàng, hạn chế trùng lịch, giảm thời gian chờ và tối ưu công suất khám của phòng khám.",
+            title: "Tối ưu hóa Điều phối Lịch hẹn",
+            desc: "Hệ thống hóa quy trình đăng ký khám, giúp chủ phòng khám theo dõi sát sao lưu lượng bệnh nhân và tối ưu hóa thời gian làm việc của bác sĩ.",
             icon: <Calendar className="w-8 h-8" />
         },
         {
-            title: "Quản lý bệnh nhân",
-            desc: "Lưu trữ đầy đủ thông tin bệnh nhân như lịch sử khám bệnh, chẩn đoán, đơn thuốc, xét nghiệm và ghi chú điều trị trong một hệ thống tập trung.",
-            icon: <Users className="w-8 h-8" />
+            title: "Quản trị Nhân sự & Chuyên khoa",
+            desc: "Dễ dàng thiết lập cơ cấu tổ chức, quản lý hồ sơ đội ngũ y bác sĩ và phân tách danh mục chuyên khoa nha khoa một cách khoa học.",
+            icon: <UserCog className="w-8 h-8" />
         },
         {
-            title: "Hồ sơ bệnh án điện tử",
-            desc: "Số hóa toàn bộ hồ sơ bệnh án giúp tìm kiếm nhanh chóng, cập nhật thuận tiện và giảm việc lưu trữ giấy tờ.",
+            title: "Số hóa Hồ sơ Nha khoa (EMR)",
+            desc: "Chuyển đổi toàn bộ bệnh án giấy sang hồ sơ điện tử. Cho phép lưu trữ lịch sử điều trị bệnh nhân.",
             icon: <FileText className="w-8 h-8" />
         },
         {
-            title: "Báo cáo và thống kê chi tiết",
-            desc: "Theo dõi tình hình hoạt động của phòng khám như số lượng bệnh nhân, doanh thu, hiệu suất làm việc và các báo cáo cần thiết theo thời gian thực.",
+            title: "Kiểm soát Tài chính Tự động",
+            desc: "Tự động khởi tạo hóa đơn phí khám ngay khi đặt lịch, giúp chủ phòng khám quản lý dòng tiền minh bạch, chính xác và chống thất thoát.",
+            icon: <Banknote className="w-8 h-8" />
+        },
+        {
+            title: "Quản lý Dữ liệu Khách hàng",
+            desc: "Lưu trữ tập trung thông tin bệnh nhân, giúp phòng khám xây dựng cơ sở dữ liệu khách hàng chất lượng để phục vụ các kế hoạch chăm sóc lâu dài.",
+            icon: <Users className="w-8 h-8" />
+        },
+        {
+            title: "Hệ thống Lưu trữ & Báo cáo",
+            desc: "Tổng hợp toàn bộ dữ liệu từ lịch hẹn, hóa đơn đến bệnh án vào một hệ thống duy nhất, giúp chủ phòng khám có cái nhìn tổng thể về tình hình vận hành.",
             icon: <BarChart3 className="w-8 h-8" />
-        },
-        {
-            title: "Bảo mật dữ liệu an toàn",
-            desc: "Hệ thống bảo mật nhiều lớp giúp đảm bảo thông tin bệnh nhân luôn được lưu trữ an toàn và bảo mật.",
-            icon: <ShieldCheck className="w-8 h-8" />
-        },
-        {
-            title: "Nhắc lịch tự động",
-            desc: "Hệ thống gửi nhắc lịch khám qua SMS hoặc Email, giúp giảm đáng kể tình trạng bệnh nhân quên lịch hẹn.",
-            icon: <Bell className="w-8 h-8" />
         },
     ];
 
@@ -111,13 +111,7 @@ const Home = () => {
                             để bạn tập trung trọn vẹn vào việc chăm sóc bệnh nhân.
                         </p>
 
-                        <Button
-                        onClick={() => navigate("/login")}
-                            className="bg-gradient-to-r from-[#3197D4] to-[#6ECFF6] hover:opacity-90 text-white font-bold h-16 px-10 text-lg rounded-xl shadow-[0_4px_14px_0_rgba(63,162,215,0.4)] border-none flex items-center gap-3 transition-all group active:scale-95"
-                        >
-                            Bắt đầu sử dụng
-                            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                        </Button>
+
 
                     </div>
 
@@ -177,8 +171,8 @@ const Home = () => {
 
                             {[
                                 { step: "01", title: "Đăng ký nhanh", desc: "Tạo tài khoản và thiết lập hồ sơ phòng khám chỉ trong vài phút." },
-                                { step: "02", title: "Nhập dữ liệu", desc: "Dễ dàng chuyển đổi dữ liệu bệnh nhân từ hệ thống cũ sang PITI Clinic." },
-                                { step: "03", title: "Bắt đầu quản lý", desc: "Bắt đầu đặt lịch, quản lý bệnh nhân và phát triển phòng khám của bạn." }
+                                { step: "02", title: "Nhập dữ liệu", desc: "Nhập liệu thông tin bệnh nhân và đội ngũ bác sĩ trực quan, khoa học." },
+                                { step: "03", title: "Bắt đầu quản lý", desc: "Dễ dàng nắm bắt tình hình phòng khám qua hệ thống quản lý hóa đơn và bệnh án." }
                             ].map((item, i) => (
                                 <div key={i} className="text-center flex flex-col items-center group relative z-10">
                                     {/* Box số: Chỉnh shadow-blue-100 để bóng đổ mịn và xanh nhẹ như ảnh */}
@@ -216,9 +210,9 @@ const Home = () => {
 
                         <div className="grid md:grid-cols-3 gap-8">
                             {[
-                                { name: "BS. Nguyễn Thu Hương ", role: "Phòng khám Nha khoa", text: "PITI Clinic đã thay đổi hoàn toàn cách chúng tôi vận hành. Thời gian thủ tục giảm 60%. " },
-                                { name: "BS. Trần Minh Nguyệt", role: "Phòng khám Nha khoa", text: "Hệ thống trực quan nhất mà tôi từng sử dụng. Việc nhắc lịch tự động giúp giảm tỷ lệ bỏ hẹn đáng kể." },
-                                { name: "BS. Lê Phan Anh", role: "Phòng khám Nha khoa", text: "Dữ liệu báo cáo cực kỳ chi tiết giúp tôi nắm bắt tình hình kinh doanh chỉ trong vài giây." }
+                                { name: "BS. Nguyễn Thu Hương ", role: "Phòng khám Nha khoa", text: "Từ khi áp dụng hệ thống, quy trình đặt lịch và làm thủ tục trở nên chuyên nghiệp hơn hẳn. Bệnh nhân không còn phải chờ đợi lâu . " },
+                                { name: "BS. Trần Minh Nguyệt", role: "Phòng khám Nha khoa", text: "Giao diện rất hiện đại và mượt mà. Mọi thông tin từ hồ sơ bệnh án đến lịch hẹn đều được tìm kiếm rất nhanh." },
+                                { name: "BS. Lê Phan Anh", role: "Phòng khám Nha khoa", text: "Dữ liệu báo cáo cực kỳ chi tiết giúp tôi dễ dàng kiểm tra các hóa đơn đã thanh toán hoặc còn nợ chỉ trong vài giây." }
                             ].map((review, i) => (
                                 <div key={i} className="bg-white p-10 rounded-[3rem] border border-blue-50 shadow-sm hover:shadow-xl transition-all duration-300">
                                     <div className="flex gap-1 mb-8">
@@ -240,28 +234,7 @@ const Home = () => {
                     </div>
                 </section>
 
-                {/* 7. CONTACT / CTA SECTION */}
-                <section id="contact" className="py-24 px-6 max-w-7xl mx-auto">
-                    <div className="bg-gradient-to-br from-[#3fa2d7] to-[#0369a1] rounded-[4rem] p-16 md:p-28 text-center text-white relative overflow-hidden shadow-2xl">
-                        <div className="relative z-10 space-y-10">
-                            <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
-                                Sẵn sàng chuyển đổi số cho phòng khám của bạn?
-                            </h2>
 
-                            <div className="flex flex-col sm:flex-row justify-center gap-6 pt-6">
-                                <Button size="lg"
-                                onClick={() => navigate("/register")}
-                                className="bg-white text-[#3fa2d7] hover:bg-blue-50 font-black h-20 px-12 rounded-2xl text-xl transition-all active:scale-95">
-
-                                    Bắt đầu ngay miễn phí
-                                </Button>
-                                <Button size="lg" variant="outline" className="border-white/40 bg-white/10 text-white hover:bg-white/20 font-black h-20 px-12 rounded-2xl text-xl">
-                                    Tìm hiểu thêm
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
             </main>
 
             {/* 8. FOOTER */}
@@ -272,7 +245,7 @@ const Home = () => {
                             <div className="w-8 h-8 bg-[#3fa2d7] rounded-lg flex items-center justify-center text-white font-black">P</div>
                             <span className="text-xl font-black">PITI Clinic</span>
                         </div>
-                        <p className="text-slate-500 font-medium">Nền tảng quản lý phòng khám.</p>
+                        <p className="text-slate-500 font-medium">Nền tảng quản lý phòng khám số hóa giúp tối ưu vận hành.</p>
                     </div>
                     <div className="space-y-4">
                         <h4 className="font-black uppercase tracking-widest text-sm">Sản phẩm</h4>

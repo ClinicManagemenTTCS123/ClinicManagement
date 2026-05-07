@@ -181,7 +181,7 @@ const PatientDashboard = () => {
                             data.recentInvoices.map((inv) => (
                                 <div key={inv.id} className="flex justify-between items-start border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                                     <div>
-                                        <h4 className="text-sm font-bold text-slate-800">Hóa đơn #{inv.id}</h4>
+                                        <h4 className="text-sm font-bold text-slate-800">Hóa đơn {inv.id}</h4>
                                         <p className="text-[11px] text-slate-400 mt-1">{formatDate(inv.createdAt)}</p>
                                     </div>
                                     <div className="text-right">
