@@ -35,7 +35,6 @@ export default function PatientBilling() {
     const handlePayment = async (invoiceId) => {
         if (!window.confirm("Xác nhận thanh toán hóa đơn này?")) return;
         try {
-            // Sử dụng file api.js của bạn để tự động có BaseURL và Interceptor
             await api.put(`/patients/${patientId}/invoices/${invoiceId}/pay`);
             alert("Thanh toán thành công!");
             fetchInvoices(); // Load lại dữ liệu
@@ -52,6 +51,83 @@ export default function PatientBilling() {
             return new Date(dateArr[0], dateArr[1]-1, dateArr[2], dateArr[3], dateArr[4]).toLocaleString('vi-VN');
         }
         return new Date(dateArr).toLocaleString('vi-VN');
+    };
+
+    // --- HÀM TẠO VÀ TẢI PDF HÓA ĐƠN ---
+    const handleDownloadPDF = (invoice) => {
+        // Tạo một cửa sổ/tab ảo
+        const printWindow = window.open('', '', 'width=800,height=600');
+
+        // Thiết kế giao diện Hóa đơn HTML
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+                <meta charset="UTF-8">
+                <title>Hóa Đơn #${invoice.id}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #334155; line-height: 1.6; }
+                    .container { max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 40px; border-radius: 12px; }
+                    .header { text-align: center; border-bottom: 2px solid #f8fafc; padding-bottom: 20px; margin-bottom: 30px; }
+                    .header h1 { color: #0f172a; margin: 0 0 5px 0; font-size: 24px; }
+                    .header p { color: #64748b; margin: 0; font-size: 14px; letter-spacing: 1px; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px dashed #f1f5f9; padding-bottom: 8px; }
+                    .label { font-weight: 600; color: #475569; }
+                    .value { color: #0f172a; font-weight: 500; text-align: right; max-width: 60%; }
+                    .total-box { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #cbd5e1; text-align: right; }
+                    .total-label { font-size: 14px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+                    .total-price { font-size: 28px; font-weight: 900; color: #0284c7; margin-top: 5px; }
+                    .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+                    .status.PAID { background: #dcfce7; color: #16a34a; }
+                    .status.UNPAID { background: #ffedd5; color: #ea580c; }
+                    .footer { text-align: center; margin-top: 40px; font-size: 13px; color: #94a3b8; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>PHÒNG KHÁM NHA KHOA</h1>
+                        <p>HÓA ĐƠN DỊCH VỤ</p>
+                    </div>
+                    
+                    <div class="row">
+                        <span class="label">Mã hóa đơn:</span>
+                        <span class="value">#${invoice.id}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Ngày lập:</span>
+                        <span class="value">${formatDate(invoice.createdAt)}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Nội dung khám:</span>
+                        <span class="value">${invoice.details || 'Khám chữa bệnh'}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Trạng thái:</span>
+                        <span class="status ${invoice.status}">${invoice.status === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}</span>
+                    </div>
+                    
+                    <div class="total-box">
+                        <div class="total-label">Tổng cộng</div>
+                        <div class="total-price">${formatCurrency(invoice.total)}</div>
+                    </div>
+
+                    <div class="footer">
+                        <p>Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi!</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() { 
+                        window.print(); 
+                        setTimeout(function() { window.close(); }, 500);
+                    }
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
     };
 
     // Tính toán Summary
@@ -127,7 +203,8 @@ export default function PatientBilling() {
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Mã Hóa Đơn: {invoice.id}</p>
                                 <h3 className="text-base font-bold text-slate-800">{invoice.details}</h3>
                             </div>
-                            <CustomBadge status="{invoice.status}"/>
+                            {/* FIX LỖI: Đã gỡ bỏ dấu ngoặc kép ở prop status */}
+                            <CustomBadge status={invoice.status}/>
                         </div>
 
                         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-50 bg-slate-50/30">
@@ -142,9 +219,14 @@ export default function PatientBilling() {
                         </div>
 
                         <div className="p-4 flex items-center justify-between bg-white">
-                            <button className="flex items-center text-slate-500 hover:text-slate-800 transition-colors px-3 py-2 rounded-lg hover:bg-slate-50">
-
+                            {/* GẮN SỰ KIỆN TẢI PDF */}
+                            <button
+                                onClick={() => handleDownloadPDF(invoice)}
+                                className="flex items-center text-slate-500 hover:text-slate-800 transition-colors px-3 py-2 rounded-lg hover:bg-slate-50"
+                            >
+                                <Download className="w-4 h-4 mr-2"/> <span className="text-sm font-semibold">Tải PDF / In Hóa đơn</span>
                             </button>
+
                             {invoice.status === 'UNPAID' && (
                                 <button onClick={() => handlePayment(invoice.id)} className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm rounded-xl px-6 py-2.5 shadow-lg shadow-sky-200 transition-all">
                                     Thanh toán ngay
@@ -155,11 +237,10 @@ export default function PatientBilling() {
                 ))}
             </div>
 
-{/* Pagination Section */}
+            {/* Pagination Section */}
             {totalPages > 0 && (
                 <div className="mt-8 px-8 py-5 border rounded-2xl flex items-center justify-between bg-white shadow-sm border-gray-100">
                     <div className="text-sm text-gray-500 font-medium">
-                        {/* FIX: Đổi từ records.length thành filteredInvoices.length hoặc invoices.length */}
                         Hiển thị <span className="text-blue-600">{currentItems.length}</span> trên tổng số <span className="text-gray-700">{filteredInvoices.length}</span> mục
                     </div>
 

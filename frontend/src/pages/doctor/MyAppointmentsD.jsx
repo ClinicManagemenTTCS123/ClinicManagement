@@ -368,7 +368,7 @@ const MyAppointmentsD = () => {
                                                         </button>
                                                     )}
 
-                                                    {apt.status !== 'COMPLETED' && apt.status !== 'CANCELED' && (
+                                                    {apt.status === 'CONFIRMED' && (
                                                         <button
                                                             onClick={() => openExamModal(apt)}
                                                             className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 flex items-center gap-2"
