@@ -62,7 +62,7 @@ const Home = () => {
 
                         <div className="flex flex-col -space-y-1.5 text-left">
             <span className="text-2xl font-black tracking-tighter text-slate-900 flex items-center">
-                PITI
+                PTIT
                 <span className="ml-1 bg-gradient-to-r from-[#3fa2d7] to-[#1e60a3] bg-clip-text text-transparent">
                     Clinic
                 </span>
