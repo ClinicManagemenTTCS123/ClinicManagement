@@ -1,26 +1,17 @@
 package com.controller;
 
-import com.dao.impl.AppointmentRepository;
-import com.dao.jpa.EntityManagerProvider;
 import com.model.dto.AppointmentDto;
-import com.model.entity.Appointment;
-import com.model.entity.Department;
-import com.model.entity.Doctor;
-import com.model.entity.Patient;
-import com.model.enums.AppointmentStatus;
-import com.model.mapper.AppointmentMapper;
-import jakarta.persistence.EntityManager;
+import com.service.IAdminAppointmentService;
+import com.service.impl.AdminAppointmentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/admin/appointments")
 public class AdminAppointmentController {
-    private final AppointmentRepository appointmentRepo = new AppointmentRepository();
+
+    private final IAdminAppointmentService adminAppointmentService = new AdminAppointmentService();
 
     @GetMapping
     public ResponseEntity<?> getAllAppointments(
@@ -28,95 +19,47 @@ public class AdminAppointmentController {
             @RequestParam(required = false, defaultValue = "ALL") String status,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
-        EntityManager em = EntityManagerProvider.em();
         try {
-            LocalDate start = (startDate != null && !startDate.isEmpty()) ? LocalDate.parse(startDate) : null;
-            LocalDate end = (endDate != null && !endDate.isEmpty()) ? LocalDate.parse(endDate) : null;
-
-            List<Appointment> list = appointmentRepo.searchAllAppointmentsForAdmin(em, search, status, start, end);
-            return ResponseEntity.ok(AppointmentMapper.toDtoList(list));
+            return ResponseEntity.ok(adminAppointmentService.getAllAppointments(search, status, startDate, endDate));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } finally {
-            em.close();
+            return ResponseEntity.badRequest().body("Lỗi tải lịch hẹn: " + e.getMessage());
         }
     }
 
     @PostMapping
     public ResponseEntity<?> createAppointment(@RequestBody AppointmentDto dto) {
-        EntityManager em = EntityManagerProvider.em();
         try {
-            em.getTransaction().begin();
-            Appointment apt = new Appointment();
-
-            Patient patient = em.find(Patient.class, dto.getPatientId());
-            Department dept = em.find(Department.class, dto.getDepartmentId());
-            Doctor doctor = dto.getDoctorId() != null ? em.find(Doctor.class, dto.getDoctorId()) : null;
-
-            if (patient == null || dept == null) throw new RuntimeException("Thiếu thông tin bệnh nhân hoặc chuyên khoa");
-
-            apt.setPatient(patient);
-            apt.setDepartment(dept);
-            apt.setDoctor(doctor);
-            apt.setStartTime(dto.getStartTime());
-            apt.setAppointment_date(dto.getStartTime().toLocalDate());
-            apt.setReason(dto.getReason());
-            apt.setStatus(AppointmentStatus.PENDING);
-
-            appointmentRepo.save(em, apt);
-            em.getTransaction().commit();
-            return ResponseEntity.ok(AppointmentMapper.toDto(apt));
+            return ResponseEntity.status(HttpStatus.CREATED).body(adminAppointmentService.createAppointment(dto));
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } finally {
-            em.close();
+            return handleException(e);
         }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateAppointment(@PathVariable Integer id, @RequestBody AppointmentDto dto) {
-        EntityManager em = EntityManagerProvider.em();
         try {
-            em.getTransaction().begin();
-            Appointment apt = appointmentRepo.findById(em, id);
-            if (apt == null) throw new RuntimeException("Không tìm thấy lịch hẹn");
-
-            if (dto.getStatus() != null) apt.setStatus(dto.getStatus());
-            if (dto.getReason() != null) apt.setReason(dto.getReason());
-            if (dto.getStartTime() != null) {
-                apt.setStartTime(dto.getStartTime());
-                apt.setAppointment_date(dto.getStartTime().toLocalDate());
-            }
-            if (dto.getDoctorId() != null) {
-                apt.setDoctor(em.find(Doctor.class, dto.getDoctorId()));
-            }
-
-            appointmentRepo.save(em, apt);
-            em.getTransaction().commit();
-            return ResponseEntity.ok(AppointmentMapper.toDto(apt));
+            return ResponseEntity.ok(adminAppointmentService.updateAppointment(id, dto));
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } finally {
-            em.close();
+            return handleException(e);
         }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAppointment(@PathVariable Integer id) {
-        EntityManager em = EntityManagerProvider.em();
         try {
-            em.getTransaction().begin();
-            Appointment apt = appointmentRepo.findById(em, id);
-            if (apt != null) em.remove(apt);
-            em.getTransaction().commit();
+            adminAppointmentService.deleteAppointment(id);
             return ResponseEntity.ok("Đã xóa thành công");
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } finally {
-            em.close();
+            return handleException(e);
         }
+    }
+
+    // --- Hàm tiện ích xử lý Exception thống nhất HTTP Status Code ---
+    private ResponseEntity<?> handleException(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "Lỗi hệ thống";
+        if (msg.toLowerCase().contains("không tìm thấy")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
+        }
+        return ResponseEntity.badRequest().body(msg);
     }
 }

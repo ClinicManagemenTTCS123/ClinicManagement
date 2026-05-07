@@ -1,5 +1,7 @@
 package com.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.model.entity.User;
 import com.model.enums.Gender;
 
 import java.time.LocalDate;
@@ -16,6 +18,8 @@ public class PatientDto {
     private String address;
     private String cccd;
     private String insuranceCode;
+    @JsonIgnore
+    private User user;
 
     public PatientDto() {}
 
@@ -32,7 +36,8 @@ public class PatientDto {
         this.insuranceCode = insuranceCode;
     }
     private String avatar;
-
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
 

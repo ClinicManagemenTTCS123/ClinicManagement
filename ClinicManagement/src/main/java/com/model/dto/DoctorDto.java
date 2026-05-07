@@ -1,5 +1,7 @@
 package com.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.model.entity.User;
 import com.model.enums.DoctorStatus;
 import com.model.enums.Gender;
 
@@ -7,6 +9,8 @@ import java.time.LocalDate;
 
 public class DoctorDto {
     private Integer id;
+    @JsonIgnore
+    private User user;
     private Integer departmentId;
     private String departmentName;
     private String fullName;
@@ -21,6 +25,10 @@ public class DoctorDto {
 
     //getter/setter
 
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user) {}
     public String getNotes() {
         return notes;
     }

@@ -2,8 +2,10 @@ package com.dao.impl;
 
 
 import com.dao.IUserRepository;
+import com.model.entity.Doctor;
 import com.model.entity.User;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 
 public class UserRepository implements IUserRepository {
@@ -26,4 +28,15 @@ public class UserRepository implements IUserRepository {
         em.merge(existing);
     }
 
+    @Override public User findById(EntityManager em, User user) {
+        try {
+            return em.createQuery(
+                            "SELECT d FROM Users d WHERE d.user = :user", User.class
+                    )
+                    .setParameter("user", user)
+                    .getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        }
+    }
 }

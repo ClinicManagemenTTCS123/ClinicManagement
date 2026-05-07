@@ -13,7 +13,6 @@ public final class PatientMapper {
 
     private PatientMapper() {}
 
-    // =================== ENTITY → DTO ===================
     public static PatientDto toDto(Patient entity) {
         if (entity == null) return null;
 
@@ -27,6 +26,7 @@ public final class PatientMapper {
         dto.setAddress(entity.getAddress());
         dto.setCccd(entity.getCccd());
         dto.setAvatar(entity.getAvatar());
+        dto.setUser(entity.getUser());
         dto.setInsuranceCode(entity.getInsuranceCode());
 
         return dto;
@@ -40,7 +40,6 @@ public final class PatientMapper {
                 .collect(Collectors.toList());
     }
 
-    // =================== DTO → ENTITY ===================
     public static Patient toEntity(PatientDto dto) {
         if (dto == null) return null;
 
@@ -54,6 +53,7 @@ public final class PatientMapper {
         entity.setAddress(trimOrNull(dto.getAddress()));
         entity.setCccd(trimOrNull(dto.getCccd()));
         entity.setAvatar(dto.getAvatar());
+        entity.setUser(dto.getUser());
         entity.setInsuranceCode(trimOrNull(dto.getInsuranceCode()));
 
         return entity;

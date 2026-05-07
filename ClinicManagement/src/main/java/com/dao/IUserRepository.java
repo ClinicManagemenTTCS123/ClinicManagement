@@ -5,7 +5,7 @@ import jakarta.persistence.EntityManager;
 
 public interface IUserRepository {
     User getUserbyUsername(EntityManager em, String username);
-    //String save(EntityManager em,User user);
+    User findById(EntityManager em, User user);
     void save(EntityManager em,User user);
     void update(EntityManager em,User existing);
 

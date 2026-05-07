@@ -21,7 +21,7 @@ public class Patient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id; // PK int
+    private Integer id;
 
 
     @Column(name = "full_name")
@@ -30,22 +30,22 @@ public class Patient {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    // tbao
     @Enumerated(EnumType.STRING)
     @Column(nullable = true, length = 10)
     private Gender gender;
 
-
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String avatar;
 
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
-
-
-    @Column(nullable = false)
     private String phone;
 
 
@@ -79,6 +79,7 @@ public class Patient {
 
     // getters/setters
     public Integer getId() { return id; }
+
     public void setId(Integer id) { this.id = id; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }

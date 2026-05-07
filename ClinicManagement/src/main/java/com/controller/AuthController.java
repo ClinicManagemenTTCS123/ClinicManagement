@@ -1,6 +1,5 @@
 package com.controller;
 
-import com.dao.impl.DoctorRepository;
 import com.dao.jpa.EntityManagerProvider;
 import com.model.dto.AuthResponse;
 import com.model.dto.LoginRequest;
@@ -12,6 +11,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -25,7 +25,6 @@ public class AuthController {
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Sai tài khoản hoặc mật khẩu");
             }
-
             Integer doctorId = null;
             Integer patientId = null;
 
@@ -33,8 +32,8 @@ public class AuthController {
             try {
                 if (user.getRole() == UserRole.DOCTOR) {
                     try {
-                        doctorId = em.createQuery("SELECT d.id FROM Doctor d WHERE d.username = :uname", Integer.class)
-                                .setParameter("uname", user.getUsername())
+                        doctorId = em.createQuery("SELECT d.id FROM Doctor d WHERE d.user.id = :userId", Integer.class)
+                                .setParameter("userId", user.getId())
                                 .getSingleResult();
                     } catch (Exception e) {
                         System.out.println("Không tìm thấy hồ sơ bác sĩ chi tiết");
@@ -42,8 +41,8 @@ public class AuthController {
                 }
                 else if (user.getRole() == UserRole.PATIENT) {
                     try {
-                        patientId = em.createQuery("SELECT p.id FROM Patient p WHERE p.username = :uname", Integer.class)
-                                .setParameter("uname", user.getUsername())
+                        patientId = em.createQuery("SELECT p.id FROM Patient p WHERE p.user.id = :userId", Integer.class)
+                                .setParameter("userId", user.getId())
                                 .getSingleResult();
                     } catch (Exception e) {
                         System.out.println("Không tìm thấy hồ sơ bệnh nhân chi tiết");
@@ -53,7 +52,6 @@ public class AuthController {
                 em.close();
             }
 
-            // Gọi đúng constructor 4 tham số: String, String, Integer, Integer
             return ResponseEntity.ok(new AuthResponse("Thành công", user.getRole().name(), doctorId, patientId));
 
         } catch (Exception e) {
@@ -64,14 +62,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
-            boolean isSuccess = userService.register(
-                    request.getEmail(),
-                    request.getPassword(),
-                    request.getConfirmPassword()
-            );
+            boolean isSuccess = userService.register(request);
 
             if (isSuccess) {
-                // SỬA TẠI ĐÂY: Truyền đủ 4 tham số để khớp với file AuthResponse.java
                 return ResponseEntity.ok(new AuthResponse("Đăng ký thành công!", "PATIENT", null, null));
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Đăng ký thất bại.");

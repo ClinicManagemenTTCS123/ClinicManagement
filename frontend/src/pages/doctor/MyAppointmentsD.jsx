@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
     Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon,
-    MoreVertical, Stethoscope, X, Activity, ClipboardList
+    MoreVertical, Stethoscope, X, Activity, ClipboardList, CheckCircle
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -133,6 +133,25 @@ const MyAppointmentsD = () => {
             setIsLoading(false);
         }
     };
+    const updateAppointmentStatus = async (appointmentId, newStatus) => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
+            await axios.put(`${apiUrl}/doctors/appointments/${appointmentId}/status`, null, {
+                params: { status: newStatus }
+            });
+            fetchAppointments();
+        } catch (error) {
+            console.error("Lỗi cập nhật trạng thái:", error);
+            alert("Không thể cập nhật trạng thái lịch hẹn.");
+        }
+    };
+    const handleConfirm = (aptId) => {
+        setOpenDropdownId(null);
+        if (window.confirm("Bạn muốn xác nhận lịch hẹn này?")) {
+            updateAppointmentStatus(aptId, 'CONFIRMED');
+        }
+    };
+
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => { fetchAppointments(); }, 500);
@@ -188,9 +207,10 @@ const MyAppointmentsD = () => {
                 services: examData.services.join(', ')
             });
 
+            await updateAppointmentStatus(selectedApt.id, 'COMPLETED');
+
             alert("Đã lưu chỉ định & hồ sơ nha khoa thành công!");
             setIsExamModalOpen(false);
-            fetchAppointments();
         } catch (error) {
             console.error("Lỗi khi lưu:", error);
             alert("Có lỗi xảy ra khi lưu dữ liệu.");
@@ -327,27 +347,41 @@ const MyAppointmentsD = () => {
                                         <td className="px-8 py-5 text-gray-600 text-sm truncate max-w-[200px]" title={apt.reason}>{apt.reason || 'Khám bệnh'}</td>
                                         <td className="px-8 py-5">{renderStatus(apt.status)}</td>
                                         <td className="px-8 py-5 text-center relative">
-
                                             <button
-                                                onClick={() => setOpenDropdownId(isDropdownOpen ? null : apt.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Tránh giựt/xung đột sự kiện
+                                                    setOpenDropdownId(isDropdownOpen ? null : apt.id);
+                                                }}
                                                 className="p-2 bg-gray-50 text-gray-500 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"
                                             >
                                                 <MoreVertical size={16} />
                                             </button>
 
                                             {isDropdownOpen && (
-                                                <div className="absolute right-12 top-10 mt-1 w-40 bg-white border border-gray-100 rounded-xl shadow-xl z-10 animate-in fade-in zoom-in-95 duration-200 py-1">
-                                                    <button
-                                                        onClick={() => openExamModal(apt)}
-                                                        className="w-full text-left px-4 py-2 text-sm text-blue-600 font-semibold hover:bg-blue-50 flex items-center gap-2"
-                                                    >
-                                                        <Stethoscope size={14} /> Khám bệnh
-                                                    </button>
+                                                <div className="absolute right-8 top-12 mt-1 w-44 bg-white border border-gray-200 rounded-xl shadow-2xl z-[999] py-1">
+                                                    {apt.status === 'PENDING' && (
+                                                        <button
+                                                            onClick={() => handleConfirm(apt.id)}
+                                                            className="w-full text-left px-4 py-2.5 text-sm text-emerald-600 font-semibold hover:bg-emerald-50 flex items-center gap-2 border-b border-gray-50"
+                                                        >
+                                                            <CheckCircle size={15} /> Xác nhận lịch
+                                                        </button>
+                                                    )}
+
+                                                    {apt.status !== 'COMPLETED' && apt.status !== 'CANCELED' && (
+                                                        <button
+                                                            onClick={() => openExamModal(apt)}
+                                                            className="w-full text-left px-4 py-2.5 text-sm text-blue-600 font-semibold hover:bg-blue-50 flex items-center gap-2"
+                                                        >
+                                                            <Stethoscope size={15} /> Khám bệnh
+                                                        </button>
+                                                    )}
+
                                                     <button
                                                         onClick={() => openViewModal(apt)}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-2"
+                                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 font-medium hover:bg-gray-50 flex items-center gap-2"
                                                     >
-                                                        <ClipboardList size={14} /> Xem hồ sơ
+                                                        <ClipboardList size={15} /> Xem hồ sơ
                                                     </button>
                                                 </div>
                                             )}
@@ -379,7 +413,7 @@ const MyAppointmentsD = () => {
             </div>
 
             {isExamModalOpen && selectedApt && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-[24px] w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
 
                         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white">

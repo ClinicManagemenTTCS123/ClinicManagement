@@ -1,75 +1,52 @@
 package com.controller;
 
-import com.dao.impl.InvoiceRepository;
-import com.dao.jpa.EntityManagerProvider;
-import com.model.dto.InvoiceDto;
-import com.model.entity.Invoice;
 import com.model.enums.InvoiceStatus;
-import com.model.mapper.InvoiceMapper;
-import jakarta.persistence.EntityManager;
+import com.service.IInvoiceService;
+import com.service.impl.InvoiceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/invoices")
 public class AdminInvoiceController {
 
-    private final InvoiceRepository invoiceRepo = new InvoiceRepository();
-    private final InvoiceMapper invoiceMapper = new InvoiceMapper();
+    private final IInvoiceService invoiceService = new InvoiceService();
 
     @GetMapping
     public ResponseEntity<?> getAllInvoices() {
-        EntityManager em = EntityManagerProvider.em();
         try {
-            List<Invoice> invoices = invoiceRepo.findAll(em);
-            return ResponseEntity.ok(invoiceMapper.toDtoList(invoices));
+            return ResponseEntity.ok(invoiceService.getAllInvoices());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi tải hóa đơn: " + e.getMessage());
-        } finally {
-            em.close();
         }
     }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateInvoiceStatus(@PathVariable Integer id, @RequestParam InvoiceStatus status) {
-        EntityManager em = EntityManagerProvider.em();
         try {
-            em.getTransaction().begin();
-            Invoice invoice = em.find(Invoice.class, id);
-            if (invoice == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy hóa đơn");
-            }
-            invoice.setStatus(status);
-            invoiceRepo.save(em, invoice);
-            em.getTransaction().commit();
+            invoiceService.updateInvoiceStatus(id, status);
             return ResponseEntity.ok("Cập nhật thành công");
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } finally {
-            em.close();
+            return handleException(e);
         }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteInvoice(@PathVariable Integer id) {
-        EntityManager em = EntityManagerProvider.em();
         try {
-            em.getTransaction().begin();
-            Invoice invoice = em.find(Invoice.class, id);
-            if (invoice != null) {
-                em.remove(invoice);
-            }
-            em.getTransaction().commit();
+            invoiceService.deleteInvoice(id);
             return ResponseEntity.ok("Xóa hóa đơn thành công");
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } finally {
-            em.close();
+            return handleException(e);
         }
+    }
+
+    private ResponseEntity<?> handleException(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "Lỗi hệ thống";
+        if (msg.toLowerCase().contains("không tìm thấy")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(msg);
+        }
+        return ResponseEntity.badRequest().body(msg);
     }
 }

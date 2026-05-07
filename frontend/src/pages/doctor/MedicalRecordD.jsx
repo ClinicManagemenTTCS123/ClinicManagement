@@ -238,7 +238,7 @@ const MedicalRecordD = () => {
             {/* MODAL XEM / SỬA HỒ SƠ */}
             {/* ==================================================== */}
             {isModalOpen && selectedRecord && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-[24px] w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
 
                         {/* Modal Header */}

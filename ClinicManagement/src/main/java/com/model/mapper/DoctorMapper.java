@@ -28,6 +28,7 @@ public final class DoctorMapper {
         dto.setDoctorStatus(entity.getStatus());
         dto.setNotes(entity.getNotes());
         dto.setAvatar(entity.getAvatar());
+        dto.setUser(entity.getUser());
         return dto;
 
     }
@@ -49,6 +50,7 @@ public final class DoctorMapper {
         e.setStatus(dto.getDoctorStatus());
         e.setNotes(dto.getNotes());
         e.setAvatar(dto.getAvatar());
+        e.setUser(dto.getUser());
 
         if (managedDept != null) e.setDepartment(managedDept);
 

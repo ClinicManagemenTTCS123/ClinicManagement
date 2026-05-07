@@ -15,7 +15,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id; // PK int
+    private Integer id;
 
     @Column(nullable = false)
     private String username;
@@ -29,7 +29,7 @@ public class User {
 
 
     @Column(nullable = false)
-    private Boolean active = true; // map INTEGER(1/0) của SQLite
+    private Boolean active = true;
 
 
     @CreationTimestamp
