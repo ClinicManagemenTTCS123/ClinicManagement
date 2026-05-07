@@ -9,6 +9,9 @@ import axios from "axios";
 // 1. Tạo Schema validation bao gồm cả username
 const formSchema = z.object({
     fullName: z.string().min(1, 'Vui lòng nhập họ và tên'),
+    username: z.string()
+        .min(3, 'Tên đăng nhập phải có ít nhất 3 ký tự')
+        .regex(/^[a-zA-Z0-9_]+$/, 'Tên đăng nhập không được chứa dấu hoặc khoảng trắng'),
     email: z.string().min(1, 'Vui lòng nhập email').email('Email không đúng định dạng'),
     username: z.string().min(4, 'Tên đăng nhập phải có ít nhất 4 ký tự'), // Thêm username
     password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
@@ -17,7 +20,6 @@ const formSchema = z.object({
     message: "Mật khẩu xác nhận không khớp",
     path: ['confirmPassword'],
 });
-
 export default function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -101,6 +103,23 @@ export default function RegisterForm() {
                             />
                         </div>
                         {errors.fullName && <p className="text-[#e74c3c] text-sm mt-1.5 ml-1">{errors.fullName.message}</p>}
+                    </div>
+                    {/* Tên đăng nhập (Username) */}
+                    <div>
+                        <div className="relative">
+                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" strokeWidth={1.5} />
+                            <input
+                                type="text"
+                                placeholder="Tên đăng nhập "
+                                className={`w-full pl-11 pr-4 py-3 rounded-xl border ${
+                                    errors.username ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-[#54bced]'
+                                } outline-none transition-all text-[15px] focus:ring-4`}
+                                {...register('username')}
+                            />
+                        </div>
+                        {errors.username && (
+                            <p className="text-[#e74c3c] text-sm mt-1.5 ml-1">{errors.username.message}</p>
+                        )}
                     </div>
 
                     {/* Email */}

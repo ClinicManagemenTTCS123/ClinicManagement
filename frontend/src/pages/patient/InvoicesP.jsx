@@ -143,7 +143,7 @@ export default function PatientBilling() {
 
                         <div className="p-4 flex items-center justify-between bg-white">
                             <button className="flex items-center text-slate-500 hover:text-slate-800 transition-colors px-3 py-2 rounded-lg hover:bg-slate-50">
-                                <Download className="w-4 h-4 mr-2"/> <span className="text-sm font-semibold">Tải PDF</span>
+
                             </button>
                             {invoice.status === 'UNPAID' && (
                                 <button onClick={() => handlePayment(invoice.id)} className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm rounded-xl px-6 py-2.5 shadow-lg shadow-sky-200 transition-all">

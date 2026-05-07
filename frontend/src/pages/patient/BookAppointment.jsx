@@ -300,15 +300,7 @@ const BookAppointment = () => {
                             </div>
                         </div>
 
-                        <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 mb-8 flex gap-3">
-                            <Lightbulb className="text-amber-500 shrink-0 mt-0.5" size={20} />
-                            <div>
-                                <h4 className="text-sm font-bold text-blue-800">Hóa đơn tự động</h4>
-                                <p className="text-xs text-blue-600/80 mt-1">
-                                    Sau khi đặt lịch thành công, hệ thống sẽ tự động tạo hóa đơn khám bệnh. Vui lòng thanh toán trước khi đến khám.
-                                </p>
-                            </div>
-                        </div>
+
 
                         <div className="flex gap-4">
                             <button
